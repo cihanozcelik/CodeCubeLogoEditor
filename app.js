@@ -43,6 +43,8 @@ const numberDistanceBiasSlider = document.getElementById('numberDistanceBiasSlid
 const numberDistanceBiasValue = document.getElementById('numberDistanceBiasValue');
 const numberScaleBiasSlider = document.getElementById('numberScaleBiasSlider');
 const numberScaleBiasValue = document.getElementById('numberScaleBiasValue');
+const iconScaleBiasSlider = document.getElementById('iconScaleBiasSlider');
+const iconScaleBiasValue = document.getElementById('iconScaleBiasValue');
 const textDistanceSlider = document.getElementById('textDistanceSlider');
 const textDistanceValue = document.getElementById('textDistanceValue');
 const textScaleBiasSlider = document.getElementById('textScaleBiasSlider');
@@ -67,6 +69,7 @@ function getParamsFromURL() {
         spacing: 20,
         numberDistanceBias: 0,
         numberScaleBias: 0,
+        iconScaleBias: 0,
         textDistance: 50,
         textScaleBias: 0,
         color: '#E45545',
@@ -81,6 +84,7 @@ function getParamsFromURL() {
         spacing: urlParams.has('spacing') ? parseInt(urlParams.get('spacing')) : defaults.spacing,
         numberDistanceBias: urlParams.has('numberDistanceBias') ? parseInt(urlParams.get('numberDistanceBias')) : defaults.numberDistanceBias,
         numberScaleBias: urlParams.has('numberScaleBias') ? parseInt(urlParams.get('numberScaleBias')) : defaults.numberScaleBias,
+        iconScaleBias: urlParams.has('iconScaleBias') ? parseInt(urlParams.get('iconScaleBias')) : defaults.iconScaleBias,
         textDistance: urlParams.has('textDistance') ? parseInt(urlParams.get('textDistance')) : defaults.textDistance,
         textScaleBias: urlParams.has('textScaleBias') ? parseInt(urlParams.get('textScaleBias')) : defaults.textScaleBias,
         color: urlParams.get('color') || defaults.color,
@@ -100,6 +104,7 @@ function updateURL() {
     url.searchParams.set('spacing', params.spacing);
     url.searchParams.set('numberDistanceBias', params.numberDistanceBias);
     url.searchParams.set('numberScaleBias', params.numberScaleBias);
+    url.searchParams.set('iconScaleBias', params.iconScaleBias);
     url.searchParams.set('textDistance', params.textDistance);
     url.searchParams.set('textScaleBias', params.textScaleBias);
     url.searchParams.set('color', params.color);
@@ -136,6 +141,8 @@ numberDistanceBiasSlider.value = params.numberDistanceBias;
 numberDistanceBiasValue.textContent = params.numberDistanceBias;
 numberScaleBiasSlider.value = params.numberScaleBias;
 numberScaleBiasValue.textContent = params.numberScaleBias;
+iconScaleBiasSlider.value = params.iconScaleBias;
+iconScaleBiasValue.textContent = params.iconScaleBias;
 textDistanceSlider.value = params.textDistance;
 textDistanceValue.textContent = params.textDistance;
 textScaleBiasSlider.value = params.textScaleBias;
@@ -407,6 +414,11 @@ function drawLogo() {
         ];
         logoTopY = Math.min(...allYPoints);
         logoBottomY = Math.max(...allYPoints);
+        
+        // Icon scale bias'ı uygula - logo noktalarını merkeze göre scale et
+        const iconScaleFactor = 1 + (params.iconScaleBias / 100);
+        logoTopY = centerY + (logoTopY - centerY) * iconScaleFactor;
+        logoBottomY = centerY + (logoBottomY - centerY) * iconScaleFactor;
     }
     
     // Text yüksekliğini hesapla
@@ -416,7 +428,8 @@ function drawLogo() {
         const baseTextWidth = 1200; // 3x boyut - bias 0'da bu genişlikte
         const textWidth = baseTextWidth * textScaleFactor;
         const textHeight = (codeCubeTextImage.height / codeCubeTextImage.width) * textWidth;
-        const textY = centerY + params.textDistance;
+        // Text Y pozisyonu: icon'un alt noktası + textDistance
+        const textY = logoBottomY + params.textDistance;
         textBottomY = textY + textHeight;
     }
     
@@ -435,6 +448,13 @@ function drawLogo() {
     // Offset ile tekrar çiz
     ctx.save();
     ctx.translate(0, verticalOffset);
+    
+    // Icon scale bias uygula - icon'ları grup olarak scale et
+    const iconScaleFactor = 1 + (params.iconScaleBias / 100);
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.scale(iconScaleFactor, iconScaleFactor);
+    ctx.translate(-centerX, -centerY);
     
     // Sol chevron ve slash'i çiz
     const leftChevrons = drawLeftChevron();
@@ -501,10 +521,30 @@ function drawLogo() {
         }
     }
     
+    // Icon scale'i restore et
+    ctx.restore();
+    
     // CodeCubeText.svg'yi çiz - logonun altına ortalanmış
-    if (rightChevrons && codeCubeTextImage.complete) {
-        // Text'in başlangıç Y pozisyonu: sağ chevron'un alt noktası + textDistance
-        const textY = centerY + params.textDistance;
+    if (rightChevrons && codeCubeTextImage.complete && slashes) {
+        // Icon'un alt noktasını bul - slash'in en alt noktası
+        const allYPoints = [
+            slashes.slash1.p0.y,
+            slashes.slash1.p1.y,
+            slashes.slash1.p2.y,
+            slashes.slash1.p3.y,
+            slashes.slash2.p0.y,
+            slashes.slash2.p1.y,
+            slashes.slash2.p2.y,
+            slashes.slash2.p3.y
+        ];
+        let iconBottomY = Math.max(...allYPoints);
+        
+        // Icon scale bias'ı uygula - bu noktayı merkeze göre scale et
+        const iconScaleFactor = 1 + (params.iconScaleBias / 100);
+        iconBottomY = centerY + (iconBottomY - centerY) * iconScaleFactor;
+        
+        // Text'in başlangıç Y pozisyonu: icon'un alt noktası + textDistance
+        const textY = iconBottomY + params.textDistance;
         
         // Scale bias uygula
         const textScaleFactor = 1 + (params.textScaleBias / 100);
@@ -609,6 +649,13 @@ numberDistanceBiasSlider.addEventListener('input', (e) => {
 numberScaleBiasSlider.addEventListener('input', (e) => {
     params.numberScaleBias = parseInt(e.target.value);
     numberScaleBiasValue.textContent = params.numberScaleBias;
+    updateURL();
+    drawLogo();
+});
+
+iconScaleBiasSlider.addEventListener('input', (e) => {
+    params.iconScaleBias = parseInt(e.target.value);
+    iconScaleBiasValue.textContent = params.iconScaleBias;
     updateURL();
     drawLogo();
 });
