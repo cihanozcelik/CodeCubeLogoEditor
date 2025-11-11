@@ -53,90 +53,104 @@ function drawParallelogram(x, y, length, width, angle) {
 }
 
 /**
+ * Yarım chevron çiz
+ * @param {number} xStartPosition - Başlangıç x pozisyonu
+ * @param {number} width - Genişlik
+ * @param {number} length - Uzunluk
+ * @param {number} angle - Ana açı (derece)
+ * @param {number} upperLineAngle - Üst çizgi açısı (derece)
+ * @param {string} color - Renk
+ */
+function drawHalfChevron(xStartPosition, width, length, angle, upperLineAngle, color) {
+    // Açıları radyana çevir
+    const angleRad = (angle * Math.PI) / 180;
+    const upperLineAngleRad = (upperLineAngle * Math.PI) / 180;
+    
+    // 1- p0: y=0, x=xStartPosition - (width/2)
+    const p0 = {
+        x: xStartPosition - (width / 2),
+        y: centerY
+    };
+    
+    // 2- p1: p0'dan angle açıda yukarı doğru length uzaklıkta
+    const p1 = {
+        x: p0.x + length * Math.sin(angleRad),
+        y: p0.y - length * Math.cos(angleRad)
+    };
+    
+    // 3- p3: y=0, x=xStartPosition + (width/2)
+    const p3 = {
+        x: xStartPosition + (width / 2),
+        y: centerY
+    };
+    
+    // 4- pTemp: p3'ten angle açıda yukarı doğru length uzaklıkta
+    const pTemp = {
+        x: p3.x + length * Math.sin(angleRad),
+        y: p3.y - length * Math.cos(angleRad)
+    };
+    
+    // 5- p2: p1'den aşağı doğru upperLineAngle açıda giden doğru ile p3-pTemp çizgisinin kesişimi
+    // p1'den giden doğru: p1 + t * (sin(upperLineAngle), cos(upperLineAngle))
+    // p3-pTemp doğrusu: p3 + s * (pTemp - p3)
+    
+    const dirP1x = Math.sin(upperLineAngleRad);
+    const dirP1y = Math.cos(upperLineAngleRad);
+    
+    const dirP3x = pTemp.x - p3.x;
+    const dirP3y = pTemp.y - p3.y;
+    
+    // Kesişim hesabı: p1 + t*dir1 = p3 + s*dir3
+    // p1.x + t*dirP1x = p3.x + s*dirP3x
+    // p1.y + t*dirP1y = p3.y + s*dirP3y
+    
+    const det = dirP1x * dirP3y - dirP1y * dirP3x;
+    const t = ((p3.x - p1.x) * dirP3y - (p3.y - p1.y) * dirP3x) / det;
+    
+    const p2 = {
+        x: p1.x + t * dirP1x,
+        y: p1.y + t * dirP1y
+    };
+    
+    // 6- p0, p1, p2, p3 noktalarını birleştir
+    ctx.beginPath();
+    ctx.moveTo(p0.x, p0.y);
+    ctx.lineTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.lineTo(p3.x, p3.y);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+}
+
+/**
  * Sol chevron çiz (< şekli)
  */
 function drawLeftChevron() {
-    const angleRad = (params.angle * Math.PI) / 180;
-    const offset = params.width / Math.tan(angleRad);
-    
-    // Chevron'un toplam yüksekliği
-    const totalHeight = params.chevronLength * 2 + params.width;
-    
-    // Başlangıç pozisyonu (merkeze göre)
-    const startX = centerX - params.chevronLength - offset - params.spacing - params.slashDiff / 2;
-    const startY = centerY - totalHeight / 2;
-    
-    // Üst parallelogram
-    drawParallelogram(startX, startY, params.chevronLength, params.width, params.angle);
-    
-    // Alt parallelogram
-    drawParallelogram(startX, startY + params.chevronLength + params.width, params.chevronLength, params.width, params.angle);
+    // Test için drawHalfChevron'u çağır
+    const xStart = centerX - params.spacing;
+    drawHalfChevron(xStart, params.width, params.chevronLength, 90 - params.angle, 90- params.angle, params.color);
+    drawHalfChevron(centerX - params.spacing, params.width, params.chevronLength, 90 +params.angle, -(90- params.angle), params.color);
 }
 
 /**
  * Orta slash çiz (/ şekli)
  */
 function drawSlash() {
-    // Slash'in dikey uzunluğu - genişlikten bağımsız
-    const slashHeight = params.chevronLength * 2 + params.slashDiff;
-    const angleRad = (params.angle * Math.PI) / 180;
+    const xStart = centerX;
+    drawHalfChevron(xStart, params.width, params.chevronLength+ params.slashDiff, 90 - params.angle, 90, params.color);
+    drawHalfChevron(xStart, params.width, params.chevronLength+ params.slashDiff, 180 + (90 - params.angle), 90, params.color);
     
-    // Açıya göre yatay kaydırma - slash'in ne kadar yatık olacağı
-    const horizontalOffset = slashHeight / Math.tan(angleRad);
-    
-    // Merkez noktadan başla - genişlik merkezlemeyi etkilememeli
-    const startX = centerX - (horizontalOffset + params.width) / 2;
-    const startY = centerY - slashHeight / 2;
-    
-    // Parallelogram - üst ve alt kenarlar yatay, açıyla sağa yatık
-    ctx.beginPath();
-    ctx.moveTo(startX + horizontalOffset, startY);                 // Sol üst köşe
-    ctx.lineTo(startX + horizontalOffset + params.width, startY);  // Sağ üst köşe (yatay)
-    ctx.lineTo(startX + params.width, startY + slashHeight);       // Sağ alt köşe
-    ctx.lineTo(startX, startY + slashHeight);                      // Sol alt köşe (yatay)
-    ctx.closePath();
-    ctx.fillStyle = params.color;
-    ctx.fill();
 }
 
 /**
  * Sağ chevron çiz (> şekli)
  */
 function drawRightChevron() {
-    const angleRad = (params.angle * Math.PI) / 180;
-    const offset = params.width / Math.tan(angleRad);
-    
-    // Chevron'un toplam yüksekliği
-    const totalHeight = params.chevronLength * 2 + params.width;
-    
-    // Başlangıç pozisyonu (merkeze göre, sağ tarafta ve ters açıda)
-    const startX = centerX + params.spacing + params.slashDiff / 2;
-    const startY = centerY - totalHeight / 2;
-    
-    // Sağ chevron için açıyı tersine çevir (180 - angle)
-    const rightAngle = 180 - params.angle;
-    const rightAngleRad = (rightAngle * Math.PI) / 180;
-    const rightOffset = params.width / Math.tan(rightAngleRad);
-    
-    // Üst parallelogram (sağa bakan)
-    ctx.beginPath();
-    ctx.moveTo(startX, startY);
-    ctx.lineTo(startX + params.chevronLength, startY);
-    ctx.lineTo(startX + params.chevronLength + rightOffset, startY + params.width);
-    ctx.lineTo(startX + rightOffset, startY + params.width);
-    ctx.closePath();
-    ctx.fillStyle = params.color;
-    ctx.fill();
-    
-    // Alt parallelogram (sağa bakan)
-    ctx.beginPath();
-    ctx.moveTo(startX, startY + params.chevronLength + params.width);
-    ctx.lineTo(startX + params.chevronLength, startY + params.chevronLength + params.width);
-    ctx.lineTo(startX + params.chevronLength + rightOffset, startY + params.chevronLength + params.width * 2);
-    ctx.lineTo(startX + rightOffset, startY + params.chevronLength + params.width * 2);
-    ctx.closePath();
-    ctx.fillStyle = params.color;
-    ctx.fill();
+    // Test için drawHalfChevron'u çağır
+    const xStart = centerX + params.spacing;
+    drawHalfChevron(xStart, -params.width, params.chevronLength, -(90 - params.angle), -(90 - params.angle), params.color);
+    drawHalfChevron(xStart, -params.width, params.chevronLength, -(90 + params.angle), (90 - params.angle), params.color);
 }
 
 /**
@@ -146,7 +160,9 @@ function drawLogo() {
     // Canvas'ı temizle
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Sadece slash'i çiz
+    // Sol chevron ve slash'i çiz
+    drawLeftChevron();
+    drawRightChevron();
     drawSlash();
 }
 
