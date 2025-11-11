@@ -63,16 +63,16 @@ function getParamsFromURL() {
     // Default değerler
     const defaults = {
         angle: 60,
-        width: 40,
-        chevronLength: 120,
+        width: 47,
+        chevronLength: 122,
         slashDiff: 60,
-        spacing: 20,
+        spacing: 34,
         numberDistanceBias: 0,
         numberScaleBias: 0,
-        iconScaleBias: 0,
-        textDistance: 50,
-        textScaleBias: 0,
-        color: '#E45545',
+        iconScaleBias: 4,
+        textDistance: 28,
+        textScaleBias: -48,
+        color: '#e45545',
         textColor: '#000000'
     };
     
