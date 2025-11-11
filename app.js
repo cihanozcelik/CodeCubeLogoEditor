@@ -85,6 +85,23 @@ logo3Image.onload = () => {
 };
 logo3Image.src = 'Logo3.svg';
 
+// Logo3.svg içeriğini text olarak yükle (SVG export için)
+let logo3SvgContent = '';
+let logo3IsLoading = true;
+
+// Async olarak yükle
+(async () => {
+    try {
+        const response = await fetch('Logo3.svg');
+        logo3SvgContent = await response.text();
+        logo3IsLoading = false;
+        console.log('Logo3.svg yüklendi');
+    } catch (err) {
+        console.error('Logo3.svg yüklenemedi:', err);
+        logo3IsLoading = false;
+    }
+})();
+
 /**
  * Yarım chevron noktalarını hesapla
  * @param {number} xStartPosition - Başlangıç x pozisyonu
@@ -370,7 +387,18 @@ drawLogo();
 /**
  * SVG olarak download et
  */
-document.getElementById('downloadSvg').addEventListener('click', () => {
+document.getElementById('downloadSvg').addEventListener('click', async () => {
+    // Logo3.svg yüklenmemişse bekle
+    if (logo3IsLoading) {
+        alert('Logo yükleniyor, lütfen birkaç saniye bekleyin...');
+        return;
+    }
+    
+    if (!logo3SvgContent) {
+        alert('Logo yüklenemedi. Sayfayı yenilemeyi deneyin.');
+        return;
+    }
+    
     // SVG string oluştur
     const svgWidth = 600;
     const svgHeight = 600;
@@ -421,13 +449,22 @@ document.getElementById('downloadSvg').addEventListener('click', () => {
         return `  <polygon points="${p0.x},${p0.y} ${p1.x},${p1.y} ${p2.x},${p2.y} ${p3.x},${p3.y}" fill="${color}" />\n`;
     }
     
+    // Minimum chevron distance hesapla
+    const { p0: tempP0, p1: tempP1, p2: tempP2, p3: tempP3 } = calculateHalfChevron(centerX, params.width, params.chevronLength, 90 - params.angle, 90);
+    const angleRad = ((90 - params.angle) * Math.PI) / 180;
+    const dirX = Math.sin(angleRad);
+    const dirY = Math.cos(angleRad);
+    const t = (centerY - tempP2.y) / dirY;
+    const intersectionX = tempP2.x + t * dirX;
+    
     // Sol chevron
-    const xStartLeft = centerX - params.spacing;
+    const minChevronDistance = (intersectionX - params.width/2) - centerX;
+    const xStartLeft = centerX - minChevronDistance - params.spacing;
     svgContent += generateSVGPolygon(xStartLeft, params.width, params.chevronLength, 90 - params.angle, 90 - params.angle, params.color);
-    svgContent += generateSVGPolygon(centerX - params.spacing, params.width, params.chevronLength, 90 + params.angle, -(90 - params.angle), params.color);
+    svgContent += generateSVGPolygon(xStartLeft, params.width, params.chevronLength, 90 + params.angle, -(90 - params.angle), params.color);
     
     // Sağ chevron
-    const xStartRight = centerX + params.spacing;
+    const xStartRight = centerX + minChevronDistance + params.spacing;
     svgContent += generateSVGPolygon(xStartRight, -params.width, params.chevronLength, -(90 - params.angle), -(90 - params.angle), params.color);
     svgContent += generateSVGPolygon(xStartRight, -params.width, params.chevronLength, -(90 + params.angle), (90 - params.angle), params.color);
     
@@ -435,6 +472,68 @@ document.getElementById('downloadSvg').addEventListener('click', () => {
     const xStartCenter = centerX;
     svgContent += generateSVGPolygon(xStartCenter, params.width, params.chevronLength + params.slashDiff, 90 - params.angle, 90, params.color);
     svgContent += generateSVGPolygon(xStartCenter, params.width, params.chevronLength + params.slashDiff, 180 + (90 - params.angle), 90, params.color);
+    
+    // Logo3.svg'yi ekle - numberP0 hesapla
+    const slash1Points = generateSVGPolygon(xStartCenter, params.width, params.chevronLength + params.slashDiff, 90 - params.angle, 90, params.color);
+    const rightChevron1Points = generateSVGPolygon(xStartRight, -params.width, params.chevronLength, -(90 - params.angle), -(90 - params.angle), params.color);
+    
+    // numberP0 ve logo pozisyonunu hesapla (basitleştirilmiş)
+    if (logo3SvgContent) {
+        // Kesişim noktasını yaklaşık hesapla
+        const { p0, p1, p2, p3 } = calculateHalfChevron(xStartCenter, params.width, params.chevronLength + params.slashDiff, 90 - params.angle, 90);
+        const { p0: rp0, p1: rp1, p2: rp2 } = calculateHalfChevron(xStartRight, -params.width, params.chevronLength, -(90 - params.angle), -(90 - params.angle));
+        
+        const numberP0 = findLineIntersection(p1, p2, rp1, rp2);
+        
+        if (numberP0) {
+            const squareHeight = rp1.y - numberP0.y;
+            const scaleFactor = 1 + (params.numberScaleBias / 100);
+            const logoHeight = squareHeight * scaleFactor;
+            const logoWidth = (logo3Image.width / logo3Image.height) * logoHeight;
+            const logoX = numberP0.x + params.numberDistanceBias;
+            
+            // Logo3.svg içeriğini parse et ve embed et
+            const parser = new DOMParser();
+            const svgDoc = parser.parseFromString(logo3SvgContent, 'image/svg+xml');
+            const logo3Svg = svgDoc.documentElement;
+            
+            // Orijinal viewBox veya width/height al
+            const viewBox = logo3Svg.getAttribute('viewBox');
+            let originalWidth, originalHeight;
+            
+            if (viewBox) {
+                const [, , vbWidth, vbHeight] = viewBox.split(' ').map(Number);
+                originalWidth = vbWidth;
+                originalHeight = vbHeight;
+            } else {
+                originalWidth = parseFloat(logo3Svg.getAttribute('width')) || 100;
+                originalHeight = parseFloat(logo3Svg.getAttribute('height')) || 100;
+            }
+            
+            // Scale faktörünü hesapla
+            const scaleX = logoWidth / originalWidth;
+            const scaleY = logoHeight / originalHeight;
+            
+            // Logo3.svg'nin tüm iç içeriğini al (innerHTML)
+            let logo3InnerSvg = logo3Svg.innerHTML;
+            
+            // Renkleri değiştir - regex ile tüm fill ve stroke değerlerini değiştir
+            // fill="..." veya fill='...' pattern'lerini değiştir (none hariç)
+            logo3InnerSvg = logo3InnerSvg.replace(/fill="(?!none)[^"]*"/g, `fill="${params.color}"`);
+            logo3InnerSvg = logo3InnerSvg.replace(/fill='(?!none)[^']*'/g, `fill='${params.color}'`);
+            logo3InnerSvg = logo3InnerSvg.replace(/stroke="(?!none)[^"]*"/g, `stroke="${params.color}"`);
+            logo3InnerSvg = logo3InnerSvg.replace(/stroke='(?!none)[^']*'/g, `stroke='${params.color}'`);
+            
+            // Style içindeki fill ve stroke değerlerini de değiştir
+            logo3InnerSvg = logo3InnerSvg.replace(/fill:\s*(?!none)[^;"]*/g, `fill: ${params.color}`);
+            logo3InnerSvg = logo3InnerSvg.replace(/stroke:\s*(?!none)[^;"]*/g, `stroke: ${params.color}`);
+            
+            // Logo3'ü transform ile ekle
+            svgContent += `  <g transform="translate(${logoX}, ${numberP0.y}) scale(${scaleX}, ${scaleY})">\n`;
+            svgContent += logo3InnerSvg + '\n';
+            svgContent += `  </g>\n`;
+        }
+    }
     
     svgContent += `</svg>`;
     
