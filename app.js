@@ -2,6 +2,32 @@
 const canvas = document.getElementById('myCanvas');
 const ctx = canvas.getContext('2d');
 
+// Canvas boyutları
+const CANVAS_WIDTH = 1200;
+const CANVAS_HEIGHT = 800;
+const ZOOM_FACTOR = 0.7;
+
+// HiDPI/Retina desteği için canvas'ı yüksek çözünürlükte render et
+const dpr = window.devicePixelRatio || 1;
+
+// Canvas internal çözünürlüğünü artır
+canvas.width = CANVAS_WIDTH * dpr;
+canvas.height = CANVAS_HEIGHT * dpr;
+
+// Context'i scale et - HiDPI için
+ctx.scale(dpr, dpr);
+
+// Zoom out için merkeze taşı, scale yap, geri taşı
+const centerX = CANVAS_WIDTH / 2;
+const centerY = CANVAS_HEIGHT / 2;
+ctx.translate(centerX, centerY);
+ctx.scale(ZOOM_FACTOR, ZOOM_FACTOR);
+ctx.translate(-centerX, -centerY);
+
+// Anti-aliasing ayarları - daha keskin render için
+ctx.imageSmoothingEnabled = true;
+ctx.imageSmoothingQuality = 'high';
+
 // Kontrol elemanlarını al
 const angleSlider = document.getElementById('angleSlider');
 const angleValue = document.getElementById('angleValue');
@@ -104,9 +130,7 @@ requestAnimationFrame(() => {
     colorPicker.dispatchEvent(new Event('change', { bubbles: true }));
 });
 
-// Canvas'ın merkezini hesapla
-const centerX = canvas.width / 2;
-const centerY = canvas.height / 2;
+// centerX ve centerY yukarıda tanımlandı (CANVAS_WIDTH/2, CANVAS_HEIGHT/2)
 
 // Logo3.svg'yi yükle
 const logo3Image = new Image();
@@ -429,9 +453,11 @@ document.getElementById('downloadSvg').addEventListener('click', async () => {
         return;
     }
     
-    // SVG string oluştur
+    // SVG string oluştur - canvas boyutundan bağımsız, orijinal boyut
     const svgWidth = 600;
     const svgHeight = 600;
+    const svgCenterX = svgWidth / 2;
+    const svgCenterY = svgHeight / 2;
     
     let svgContent = `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">
@@ -445,7 +471,7 @@ document.getElementById('downloadSvg').addEventListener('click', async () => {
         
         const p0 = {
             x: xStartPosition - (width / 2),
-            y: centerY
+            y: svgCenterY
         };
         
         const p1 = {
@@ -455,7 +481,7 @@ document.getElementById('downloadSvg').addEventListener('click', async () => {
         
         const p3 = {
             x: xStartPosition + (width / 2),
-            y: centerY
+            y: svgCenterY
         };
         
         const pTemp = {
