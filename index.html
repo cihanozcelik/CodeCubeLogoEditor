@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas Daire Çizici</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Canvas Daire Çizici</h1>
+        
+        <div class="canvas-wrapper">
+            <canvas id="myCanvas" width="600" height="600"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="radiusSlider">
+                    Yarıçap: <span id="radiusValue">100</span>px
+                </label>
+                <input 
+                    type="range" 
+                    id="radiusSlider" 
+                    min="10" 
+                    max="250" 
+                    value="100"
+                    step="1"
+                >
+            </div>
+
+            <div class="control-group">
+                <label for="colorPicker">
+                    Renk Seç:
+                </label>
+                <input 
+                    type="color" 
+                    id="colorPicker" 
+                    value="#3498db"
+                >
+                <span id="colorValue">#3498db</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+
