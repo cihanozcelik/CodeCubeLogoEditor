@@ -74,6 +74,10 @@ if (params.color && !params.color.startsWith('#')) {
     params.color = '#' + params.color;
 }
 
+console.log('Loaded params:', params);
+console.log('Color from URL:', params.color);
+console.log('Setting colorPicker.value to:', params.color);
+
 // Slider'ları URL'deki değerlere göre ayarla
 angleSlider.value = params.angle;
 angleValue.textContent = params.angle;
@@ -91,6 +95,8 @@ numberScaleBiasSlider.value = params.numberScaleBias;
 numberScaleBiasValue.textContent = params.numberScaleBias;
 colorPicker.value = params.color;
 colorValue.textContent = params.color;
+
+console.log('After setting - colorPicker.value:', colorPicker.value);
 
 // Canvas'ın merkezini hesapla
 const centerX = canvas.width / 2;
