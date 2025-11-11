@@ -77,15 +77,26 @@ function drawLeftChevron() {
  * Orta slash çiz (/ şekli)
  */
 function drawSlash() {
-    const slashLength = params.chevronLength * 2 + params.width + params.slashDiff;
+    // Slash'in dikey uzunluğu - genişlikten bağımsız
+    const slashHeight = params.chevronLength * 2 + params.slashDiff;
     const angleRad = (params.angle * Math.PI) / 180;
-    const offset = params.width / Math.tan(angleRad);
     
-    // Slash'in başlangıç pozisyonu
-    const startX = centerX - offset / 2;
-    const startY = centerY - slashLength / 2;
+    // Açıya göre yatay kaydırma - slash'in ne kadar yatık olacağı
+    const horizontalOffset = slashHeight / Math.tan(angleRad);
     
-    drawParallelogram(startX, startY, slashLength, params.width, params.angle);
+    // Merkez noktadan başla - genişlik merkezlemeyi etkilememeli
+    const startX = centerX - (horizontalOffset + params.width) / 2;
+    const startY = centerY - slashHeight / 2;
+    
+    // Parallelogram - üst ve alt kenarlar yatay, açıyla sağa yatık
+    ctx.beginPath();
+    ctx.moveTo(startX + horizontalOffset, startY);                 // Sol üst köşe
+    ctx.lineTo(startX + horizontalOffset + params.width, startY);  // Sağ üst köşe (yatay)
+    ctx.lineTo(startX + params.width, startY + slashHeight);       // Sağ alt köşe
+    ctx.lineTo(startX, startY + slashHeight);                      // Sol alt köşe (yatay)
+    ctx.closePath();
+    ctx.fillStyle = params.color;
+    ctx.fill();
 }
 
 /**
@@ -135,10 +146,8 @@ function drawLogo() {
     // Canvas'ı temizle
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Logoyu çiz
-    drawLeftChevron();
+    // Sadece slash'i çiz
     drawSlash();
-    drawRightChevron();
 }
 
 /**
