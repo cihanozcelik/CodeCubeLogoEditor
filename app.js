@@ -25,15 +25,28 @@ const colorValue = document.getElementById('colorValue');
  */
 function getParamsFromURL() {
     const urlParams = new URLSearchParams(window.location.search);
+    
+    // Default değerler
+    const defaults = {
+        angle: 60,
+        width: 40,
+        chevronLength: 120,
+        slashDiff: 60,
+        spacing: 20,
+        numberDistanceBias: 0,
+        numberScaleBias: 0,
+        color: '#E45545'
+    };
+    
     return {
-        angle: parseInt(urlParams.get('angle')) || parseInt(angleSlider.value),
-        width: parseInt(urlParams.get('width')) || parseInt(widthSlider.value),
-        chevronLength: parseInt(urlParams.get('chevronLength')) || parseInt(chevronLengthSlider.value),
-        slashDiff: parseInt(urlParams.get('slashDiff')) || parseInt(slashDiffSlider.value),
-        spacing: parseInt(urlParams.get('spacing')) || parseInt(spacingSlider.value),
-        numberDistanceBias: parseInt(urlParams.get('numberDistanceBias')) || parseInt(numberDistanceBiasSlider.value),
-        numberScaleBias: parseInt(urlParams.get('numberScaleBias')) || parseInt(numberScaleBiasSlider.value),
-        color: urlParams.get('color') || colorPicker.value
+        angle: urlParams.has('angle') ? parseInt(urlParams.get('angle')) : defaults.angle,
+        width: urlParams.has('width') ? parseInt(urlParams.get('width')) : defaults.width,
+        chevronLength: urlParams.has('chevronLength') ? parseInt(urlParams.get('chevronLength')) : defaults.chevronLength,
+        slashDiff: urlParams.has('slashDiff') ? parseInt(urlParams.get('slashDiff')) : defaults.slashDiff,
+        spacing: urlParams.has('spacing') ? parseInt(urlParams.get('spacing')) : defaults.spacing,
+        numberDistanceBias: urlParams.has('numberDistanceBias') ? parseInt(urlParams.get('numberDistanceBias')) : defaults.numberDistanceBias,
+        numberScaleBias: urlParams.has('numberScaleBias') ? parseInt(urlParams.get('numberScaleBias')) : defaults.numberScaleBias,
+        color: urlParams.get('color') || defaults.color
     };
 }
 
