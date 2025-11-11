@@ -179,8 +179,10 @@ function drawLeftChevron() {
     // Test için drawHalfChevron'u çağır
     const minChevronDistance = calculateMinChevronDistance();
     const xStart = centerX - minChevronDistance - params.spacing;
-    drawHalfChevron(xStart, params.width, params.chevronLength, 90 - params.angle, 90- params.angle, params.color);
-    drawHalfChevron(xStart, params.width, params.chevronLength, 90 +params.angle, -(90- params.angle), params.color);
+    const leftChevron1 = drawHalfChevron(xStart, params.width, params.chevronLength, 90 - params.angle, 90- params.angle, params.color);
+    const leftChevron2 = drawHalfChevron(xStart, params.width, params.chevronLength, 90 +params.angle, -(90- params.angle), params.color);
+    
+    return { leftChevron1, leftChevron2 };
 }
 
 /**
@@ -188,9 +190,10 @@ function drawLeftChevron() {
  */
 function drawSlash() {
     const xStart = centerX;
-    drawHalfChevron(xStart, params.width, params.chevronLength+ params.slashDiff, 90 - params.angle, 90, params.color);
-    drawHalfChevron(xStart, params.width, params.chevronLength+ params.slashDiff, 180 + (90 - params.angle), 90, params.color);
+    const slash1 = drawHalfChevron(xStart, params.width, params.chevronLength+ params.slashDiff, 90 - params.angle, 90, params.color);
+    const slash2 = drawHalfChevron(xStart, params.width, params.chevronLength+ params.slashDiff, 180 + (90 - params.angle), 90, params.color);
     
+    return { slash1, slash2 };
 }
 
 /**
@@ -200,8 +203,34 @@ function drawRightChevron() {
     // Test için drawHalfChevron'u çağır
     const minChevronDistance = calculateMinChevronDistance();
     const xStart = centerX + minChevronDistance + params.spacing;
-    drawHalfChevron(xStart, -params.width, params.chevronLength, -(90 - params.angle), -(90 - params.angle), params.color);
-    drawHalfChevron(xStart, -params.width, params.chevronLength, -(90 + params.angle), (90 - params.angle), params.color);
+    const rightChevron1 = drawHalfChevron(xStart, -params.width, params.chevronLength, -(90 - params.angle), -(90 - params.angle), params.color);
+    const rightChevron2 = drawHalfChevron(xStart, -params.width, params.chevronLength, -(90 + params.angle), (90 - params.angle), params.color);
+    
+    return { rightChevron1, rightChevron2 };
+}
+
+/**
+ * İki doğrunun kesişim noktasını bul
+ */
+function findLineIntersection(p1, p2, p3, p4) {
+    // p1-p2 doğrusu ve p3-p4 doğrusunun kesişimi
+    const x1 = p1.x, y1 = p1.y;
+    const x2 = p2.x, y2 = p2.y;
+    const x3 = p3.x, y3 = p3.y;
+    const x4 = p4.x, y4 = p4.y;
+    
+    const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+    
+    if (Math.abs(denom) < 0.0001) {
+        return null; // Paralel çizgiler
+    }
+    
+    const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
+    
+    return {
+        x: x1 + t * (x2 - x1),
+        y: y1 + t * (y2 - y1)
+    };
 }
 
 /**
@@ -212,9 +241,30 @@ function drawLogo() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // Sol chevron ve slash'i çiz
-    drawLeftChevron();
-    drawRightChevron();
-    drawSlash();
+    const leftChevrons = drawLeftChevron();
+    const rightChevrons = drawRightChevron();
+    const slashes = drawSlash();
+    
+    // numberP0: slash'in ilk yarısının p1-p2 ile sağ chevron'un ilk yarısının p1-p2 kesişimi
+    const numberP0 = findLineIntersection(
+        slashes.slash1.p1,
+        slashes.slash1.p2,
+        rightChevrons.rightChevron1.p1,
+        rightChevrons.rightChevron1.p2
+    );
+    
+    // Noktayı çiz
+    if (numberP0) {
+        ctx.beginPath();
+        ctx.arc(numberP0.x, numberP0.y, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = '#00ff00';
+        ctx.fill();
+        
+        // numberP0'dan rightChevron1.p1.y'ye kadar mavi kare
+        const squareHeight = rightChevrons.rightChevron1.p1.y - numberP0.y;
+        ctx.fillStyle = 'rgba(0, 0, 255, 0.5)'; // Yarı saydam mavi
+        ctx.fillRect(numberP0.x, numberP0.y, squareHeight, squareHeight);
+    }
 }
 
 /**
