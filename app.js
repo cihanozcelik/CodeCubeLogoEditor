@@ -413,7 +413,7 @@ function drawLogo() {
     let textBottomY = logoBottomY;
     if (codeCubeTextImage.complete) {
         const textScaleFactor = 1 + (params.textScaleBias / 100);
-        const baseTextWidth = 400;
+        const baseTextWidth = 1200; // 3x boyut - bias 0'da bu genişlikte
         const textWidth = baseTextWidth * textScaleFactor;
         const textHeight = (codeCubeTextImage.height / codeCubeTextImage.width) * textWidth;
         const textY = centerY + params.textDistance;
@@ -509,8 +509,8 @@ function drawLogo() {
         // Scale bias uygula
         const textScaleFactor = 1 + (params.textScaleBias / 100);
         
-        // Text boyutunu hesapla - logonun genişliğine göre orantılı
-        const baseTextWidth = 400; // Base genişlik
+        // Text boyutunu hesapla - 3x boyut, bias 0'da bu genişlikte
+        const baseTextWidth = 1200; // 3x boyut - bias 0'da bu genişlikte
         const textWidth = baseTextWidth * textScaleFactor;
         const textHeight = (codeCubeTextImage.height / codeCubeTextImage.width) * textWidth;
         
@@ -807,7 +807,7 @@ document.getElementById('downloadSvg').addEventListener('click', async () => {
         // Text'in pozisyonunu hesapla
         const textY = svgCenterY + params.textDistance;
         const textScaleFactor = 1 + (params.textScaleBias / 100);
-        const baseTextWidth = 400;
+        const baseTextWidth = 1200; // 3x boyut - bias 0'da bu genişlikte
         const textWidth = baseTextWidth * textScaleFactor;
         const textX = svgCenterX - (textWidth / 2);
         
