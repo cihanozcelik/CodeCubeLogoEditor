@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Canvas Daire Çizici</title>
+    <title>CodeCube Logo Creator</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>Canvas Daire Çizici</h1>
+        <h1>CodeCube Logo Creator</h1>
         
         <div class="canvas-wrapper">
             <canvas id="myCanvas" width="600" height="600"></canvas>
@@ -16,15 +16,71 @@
 
         <div class="controls">
             <div class="control-group">
-                <label for="radiusSlider">
-                    Yarıçap: <span id="radiusValue">100</span>px
+                <label for="angleSlider">
+                    Açı: <span id="angleValue">60</span>°
                 </label>
                 <input 
                     type="range" 
-                    id="radiusSlider" 
-                    min="10" 
-                    max="250" 
-                    value="100"
+                    id="angleSlider" 
+                    min="30" 
+                    max="80" 
+                    value="60"
+                    step="1"
+                >
+            </div>
+
+            <div class="control-group">
+                <label for="widthSlider">
+                    Genişlik: <span id="widthValue">40</span>px
+                </label>
+                <input 
+                    type="range" 
+                    id="widthSlider" 
+                    min="20" 
+                    max="80" 
+                    value="40"
+                    step="1"
+                >
+            </div>
+
+            <div class="control-group">
+                <label for="chevronLengthSlider">
+                    Chevron Uzunluğu: <span id="chevronLengthValue">120</span>px
+                </label>
+                <input 
+                    type="range" 
+                    id="chevronLengthSlider" 
+                    min="60" 
+                    max="200" 
+                    value="120"
+                    step="1"
+                >
+            </div>
+
+            <div class="control-group">
+                <label for="slashDiffSlider">
+                    Slash Uzunluk Farkı: <span id="slashDiffValue">60</span>px
+                </label>
+                <input 
+                    type="range" 
+                    id="slashDiffSlider" 
+                    min="0" 
+                    max="120" 
+                    value="60"
+                    step="1"
+                >
+            </div>
+
+            <div class="control-group">
+                <label for="spacingSlider">
+                    Chevron-Slash Uzaklık: <span id="spacingValue">20</span>px
+                </label>
+                <input 
+                    type="range" 
+                    id="spacingSlider" 
+                    min="0" 
+                    max="60" 
+                    value="20"
                     step="1"
                 >
             </div>
@@ -36,9 +92,9 @@
                 <input 
                     type="color" 
                     id="colorPicker" 
-                    value="#3498db"
+                    value="#C1503D"
                 >
-                <span id="colorValue">#3498db</span>
+                <span id="colorValue">#C1503D</span>
             </div>
         </div>
     </div>
