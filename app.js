@@ -208,3 +208,86 @@ colorPicker.addEventListener('input', (e) => {
 // İlk çizimi yap
 drawLogo();
 
+/**
+ * SVG olarak download et
+ */
+document.getElementById('downloadSvg').addEventListener('click', () => {
+    // SVG string oluştur
+    const svgWidth = 600;
+    const svgHeight = 600;
+    
+    let svgContent = `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">
+`;
+
+    // Her polygon için SVG path oluştur
+    // drawHalfChevron fonksiyonunu SVG'ye çevir
+    function generateSVGPolygon(xStartPosition, width, length, angle, upperLineAngle, color) {
+        const angleRad = (angle * Math.PI) / 180;
+        const upperLineAngleRad = (upperLineAngle * Math.PI) / 180;
+        
+        const p0 = {
+            x: xStartPosition - (width / 2),
+            y: centerY
+        };
+        
+        const p1 = {
+            x: p0.x + length * Math.sin(angleRad),
+            y: p0.y - length * Math.cos(angleRad)
+        };
+        
+        const p3 = {
+            x: xStartPosition + (width / 2),
+            y: centerY
+        };
+        
+        const pTemp = {
+            x: p3.x + length * Math.sin(angleRad),
+            y: p3.y - length * Math.cos(angleRad)
+        };
+        
+        const dirP1x = Math.sin(upperLineAngleRad);
+        const dirP1y = Math.cos(upperLineAngleRad);
+        const dirP3x = pTemp.x - p3.x;
+        const dirP3y = pTemp.y - p3.y;
+        
+        const det = dirP1x * dirP3y - dirP1y * dirP3x;
+        const t = ((p3.x - p1.x) * dirP3y - (p3.y - p1.y) * dirP3x) / det;
+        
+        const p2 = {
+            x: p1.x + t * dirP1x,
+            y: p1.y + t * dirP1y
+        };
+        
+        return `  <polygon points="${p0.x},${p0.y} ${p1.x},${p1.y} ${p2.x},${p2.y} ${p3.x},${p3.y}" fill="${color}" />\n`;
+    }
+    
+    // Sol chevron
+    const xStartLeft = centerX - params.spacing;
+    svgContent += generateSVGPolygon(xStartLeft, params.width, params.chevronLength, 90 - params.angle, 90 - params.angle, params.color);
+    svgContent += generateSVGPolygon(centerX - params.spacing, params.width, params.chevronLength, 90 + params.angle, -(90 - params.angle), params.color);
+    
+    // Sağ chevron
+    const xStartRight = centerX + params.spacing;
+    svgContent += generateSVGPolygon(xStartRight, -params.width, params.chevronLength, -(90 - params.angle), -(90 - params.angle), params.color);
+    svgContent += generateSVGPolygon(xStartRight, -params.width, params.chevronLength, -(90 + params.angle), (90 - params.angle), params.color);
+    
+    // Slash
+    const xStartCenter = centerX;
+    svgContent += generateSVGPolygon(xStartCenter, params.width, params.chevronLength + params.slashDiff, 90 - params.angle, 90, params.color);
+    svgContent += generateSVGPolygon(xStartCenter, params.width, params.chevronLength + params.slashDiff, 180 + (90 - params.angle), 90, params.color);
+    
+    svgContent += `</svg>`;
+    
+    // Download
+    const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'codecube-logo.svg';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+});
+
