@@ -46,6 +46,7 @@ h1 {
 .download-section {
     display: flex;
     justify-content: center;
+    gap: 15px;
     margin-bottom: 20px;
 }
 
@@ -69,6 +70,15 @@ h1 {
 
 .download-btn:active {
     transform: translateY(0);
+}
+
+.share-btn {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+}
+
+.share-btn:hover {
+    box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
 }
 
 .controls {
