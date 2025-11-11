@@ -716,6 +716,10 @@ document.getElementById('downloadSvg').addEventListener('click', async () => {
 <svg width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">
 `;
 
+    // Icon scale bias için grup başlat
+    const iconScaleFactor = 1 + (params.iconScaleBias / 100);
+    svgContent += `  <g transform="translate(${svgCenterX}, ${svgCenterY}) scale(${iconScaleFactor}) translate(-${svgCenterX}, -${svgCenterY})">\n`;
+
     // Her polygon için SVG path oluştur
     // drawHalfChevron fonksiyonunu SVG'ye çevir
     function generateSVGPolygon(xStartPosition, width, length, angle, upperLineAngle, color) {
@@ -843,16 +847,27 @@ document.getElementById('downloadSvg').addEventListener('click', async () => {
             });
             
             // Logo3'ü transform ile ekle
-            svgContent += `  <g transform="translate(${logoX}, ${numberP0.y}) scale(${scaleX}, ${scaleY})">\n`;
+            svgContent += `    <g transform="translate(${logoX}, ${numberP0.y}) scale(${scaleX}, ${scaleY})">\n`;
             svgContent += logo3InnerSvg + '\n';
-            svgContent += `  </g>\n`;
+            svgContent += `    </g>\n`;
         }
     }
     
+    // Icon grubunu kapat
+    svgContent += `  </g>\n`;
+    
     // CodeCubeText.svg'yi ekle - logonun altına ortalanmış
     if (codeCubeTextSvgContent) {
-        // Text'in pozisyonunu hesapla
-        const textY = svgCenterY + params.textDistance;
+        // Slash'in alt noktasını hesapla (icon scale ile)
+        const { p0, p1, p2, p3 } = calculateHalfChevron(xStartCenter, params.width, params.chevronLength + params.slashDiff, 180 + (90 - params.angle), 90);
+        const slashBottomY = Math.max(p0.y, p1.y, p2.y, p3.y);
+        
+        // Icon scale bias uygula
+        const iconScaleFactor = 1 + (params.iconScaleBias / 100);
+        const scaledSlashBottomY = svgCenterY + (slashBottomY - svgCenterY) * iconScaleFactor;
+        
+        // Text'in pozisyonunu hesapla: icon alt noktası + textDistance
+        const textY = scaledSlashBottomY + params.textDistance;
         const textScaleFactor = 1 + (params.textScaleBias / 100);
         const baseTextWidth = 1200; // 3x boyut - bias 0'da bu genişlikte
         const textWidth = baseTextWidth * textScaleFactor;
