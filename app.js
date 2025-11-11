@@ -49,6 +49,8 @@ const textScaleBiasSlider = document.getElementById('textScaleBiasSlider');
 const textScaleBiasValue = document.getElementById('textScaleBiasValue');
 const colorPicker = document.getElementById('colorPicker');
 const colorValue = document.getElementById('colorValue');
+const textColorPicker = document.getElementById('textColorPicker');
+const textColorValue = document.getElementById('textColorValue');
 
 /**
  * URL'den parametreleri oku
@@ -67,7 +69,8 @@ function getParamsFromURL() {
         numberScaleBias: 0,
         textDistance: 50,
         textScaleBias: 0,
-        color: '#E45545'
+        color: '#E45545',
+        textColor: '#000000'
     };
     
     return {
@@ -80,7 +83,8 @@ function getParamsFromURL() {
         numberScaleBias: urlParams.has('numberScaleBias') ? parseInt(urlParams.get('numberScaleBias')) : defaults.numberScaleBias,
         textDistance: urlParams.has('textDistance') ? parseInt(urlParams.get('textDistance')) : defaults.textDistance,
         textScaleBias: urlParams.has('textScaleBias') ? parseInt(urlParams.get('textScaleBias')) : defaults.textScaleBias,
-        color: urlParams.get('color') || defaults.color
+        color: urlParams.get('color') || defaults.color,
+        textColor: urlParams.get('textColor') || defaults.textColor
     };
 }
 
@@ -99,17 +103,23 @@ function updateURL() {
     url.searchParams.set('textDistance', params.textDistance);
     url.searchParams.set('textScaleBias', params.textScaleBias);
     url.searchParams.set('color', params.color);
+    url.searchParams.set('textColor', params.textColor);
     window.history.replaceState({}, '', url);
 }
 
 // Parametreler - URL'den yükle veya default değerler
 let params = getParamsFromURL();
 
-// Rengin # ile başladığından emin ol ve lowercase yap
+// Renklerin # ile başladığından emin ol ve lowercase yap
 if (params.color && !params.color.startsWith('#')) {
     params.color = '#' + params.color;
 }
 params.color = params.color.toLowerCase();
+
+if (params.textColor && !params.textColor.startsWith('#')) {
+    params.textColor = '#' + params.textColor;
+}
+params.textColor = params.textColor.toLowerCase();
 
 // Slider'ları URL'deki değerlere göre ayarla
 angleSlider.value = params.angle;
@@ -131,17 +141,21 @@ textDistanceValue.textContent = params.textDistance;
 textScaleBiasSlider.value = params.textScaleBias;
 textScaleBiasValue.textContent = params.textScaleBias;
 
-// Color picker'ı güncelle
+// Color picker'ları güncelle
 colorValue.textContent = params.color;
+textColorValue.textContent = params.textColor;
 
-// Tarayıcı render'ını bekle, sonra değeri set et
+// Tarayıcı render'ını bekle, sonra değerleri set et
 requestAnimationFrame(() => {
     colorPicker.value = params.color;
     colorPicker.setAttribute('value', params.color);
-    
-    // Input event'ini de tetikle
     colorPicker.dispatchEvent(new Event('input', { bubbles: true }));
     colorPicker.dispatchEvent(new Event('change', { bubbles: true }));
+    
+    textColorPicker.value = params.textColor;
+    textColorPicker.setAttribute('value', params.textColor);
+    textColorPicker.dispatchEvent(new Event('input', { bubbles: true }));
+    textColorPicker.dispatchEvent(new Event('change', { bubbles: true }));
 });
 
 // centerX ve centerY yukarıda tanımlandı (CANVAS_WIDTH/2, CANVAS_HEIGHT/2)
@@ -170,7 +184,7 @@ let logo3IsLoading = true;
     }
 })();
 
-// CodeCubeText.svg'yi yükle
+// CodeCubeText.svg'yi Image olarak yükle (canvas için)
 const codeCubeTextImage = new Image();
 codeCubeTextImage.onload = () => {
     drawLogo(); // Resim yüklenince tekrar çiz
@@ -414,7 +428,7 @@ function drawLogo() {
     }
     
     // CodeCubeText.svg'yi çiz - logonun altına ortalanmış
-    if (codeCubeTextImage.complete && rightChevrons && codeCubeTextSvgContent) {
+    if (rightChevrons && codeCubeTextImage.complete) {
         // Text'in başlangıç Y pozisyonu: sağ chevron'un alt noktası + textDistance
         const textY = centerY + params.textDistance;
         
@@ -429,36 +443,23 @@ function drawLogo() {
         // X pozisyonunu ortala
         const textX = centerX - (textWidth / 2);
         
-        // SVG'yi yüksek çözünürlükte Image'a çevir
-        const parser = new DOMParser();
-        const svgDoc = parser.parseFromString(codeCubeTextSvgContent, 'image/svg+xml');
-        const textSvg = svgDoc.documentElement;
-        
-        // Renkleri değiştir
-        let coloredSvgContent = codeCubeTextSvgContent;
-        coloredSvgContent = coloredSvgContent.replace(/fill="(?!none)[^"]*"/g, `fill="${params.color}"`);
-        coloredSvgContent = coloredSvgContent.replace(/fill='(?!none)[^']*'/g, `fill='${params.color}'`);
-        coloredSvgContent = coloredSvgContent.replace(/stroke="(?!none)[^"]*"/g, `stroke="${params.color}"`);
-        coloredSvgContent = coloredSvgContent.replace(/stroke='(?!none)[^']*'/g, `stroke='${params.color}'`);
-        
-        // Yüksek çözünürlükte temp canvas oluştur
-        const scale = 4; // 4x çözünürlük
+        // Text'i renkle boya - yüksek çözünürlüklü geçici canvas kullan
+        const scale = 4; // 4x yüksek çözünürlük
         const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = textWidth * scale * dpr;
-        tempCanvas.height = textHeight * scale * dpr;
+        tempCanvas.width = codeCubeTextImage.width * scale;
+        tempCanvas.height = codeCubeTextImage.height * scale;
         const tempCtx = tempCanvas.getContext('2d');
         
-        // SVG'yi blob'a çevir ve yükle
-        const blob = new Blob([coloredSvgContent], { type: 'image/svg+xml' });
-        const url = URL.createObjectURL(blob);
-        const img = new Image();
+        // Orijinal text'i yüksek çözünürlükte çiz
+        tempCtx.drawImage(codeCubeTextImage, 0, 0, tempCanvas.width, tempCanvas.height);
         
-        img.onload = () => {
-            tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
-            ctx.drawImage(tempCanvas, textX, textY, textWidth, textHeight);
-            URL.revokeObjectURL(url);
-        };
-        img.src = url;
+        // Global composite operation ile renklendirme
+        tempCtx.globalCompositeOperation = 'source-in';
+        tempCtx.fillStyle = params.textColor;
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        
+        // Ana canvas'a boyalı text'i çiz (scale down edilecek)
+        ctx.drawImage(tempCanvas, textX, textY, textWidth, textHeight);
     }
 }
 
@@ -531,6 +532,13 @@ textScaleBiasSlider.addEventListener('input', (e) => {
 colorPicker.addEventListener('input', (e) => {
     params.color = e.target.value;
     colorValue.textContent = params.color;
+    updateURL();
+    drawLogo();
+});
+
+textColorPicker.addEventListener('input', (e) => {
+    params.textColor = e.target.value;
+    textColorValue.textContent = params.textColor;
     updateURL();
     drawLogo();
 });
@@ -736,13 +744,13 @@ document.getElementById('downloadSvg').addEventListener('click', async () => {
         Array.from(textSvg.children).forEach(child => {
             let childSvg = textSerializer.serializeToString(child);
             
-            // Renkleri değiştir
-            childSvg = childSvg.replace(/fill="(?!none)[^"]*"/g, `fill="${params.color}"`);
-            childSvg = childSvg.replace(/fill='(?!none)[^']*'/g, `fill='${params.color}'`);
-            childSvg = childSvg.replace(/stroke="(?!none)[^"]*"/g, `stroke="${params.color}"`);
-            childSvg = childSvg.replace(/stroke='(?!none)[^']*'/g, `stroke='${params.color}'`);
-            childSvg = childSvg.replace(/fill:\s*(?!none)[^;"]*/g, `fill: ${params.color}`);
-            childSvg = childSvg.replace(/stroke:\s*(?!none)[^;"]*/g, `stroke: ${params.color}`);
+            // Renkleri değiştir - textColor kullan
+            childSvg = childSvg.replace(/fill="(?!none)[^"]*"/g, `fill="${params.textColor}"`);
+            childSvg = childSvg.replace(/fill='(?!none)[^']*'/g, `fill='${params.textColor}'`);
+            childSvg = childSvg.replace(/stroke="(?!none)[^"]*"/g, `stroke="${params.textColor}"`);
+            childSvg = childSvg.replace(/stroke='(?!none)[^']*'/g, `stroke='${params.textColor}'`);
+            childSvg = childSvg.replace(/fill:\s*(?!none)[^;"]*/g, `fill: ${params.textColor}`);
+            childSvg = childSvg.replace(/stroke:\s*(?!none)[^;"]*/g, `stroke: ${params.textColor}`);
             
             textInnerSvg += childSvg + '\n';
         });
