@@ -706,9 +706,9 @@ document.getElementById('downloadSvg').addEventListener('click', async () => {
         return;
     }
     
-    // SVG string oluştur - canvas boyutlarını kullan ama zoom out'suz
-    const svgWidth = CANVAS_WIDTH;
-    const svgHeight = CANVAS_HEIGHT;
+    // SVG string oluştur - ZOOM_FACTOR'suz görüneceği için daha büyük boyut kullan
+    const svgWidth = CANVAS_WIDTH / ZOOM_FACTOR;
+    const svgHeight = CANVAS_HEIGHT / ZOOM_FACTOR;
     const svgCenterX = svgWidth / 2;
     const svgCenterY = svgHeight / 2;
     
