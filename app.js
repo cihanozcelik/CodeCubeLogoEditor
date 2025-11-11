@@ -285,7 +285,22 @@ function drawLogo() {
             // Distance bias uygula (x pozisyonuna)
             const logoX = numberP0.x + params.numberDistanceBias;
             
-            ctx.drawImage(logo3Image, logoX, numberP0.y, logoWidth, logoHeight);
+            // Logoyu renkle boya - önce geçici canvas'a çiz
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = logo3Image.width;
+            tempCanvas.height = logo3Image.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            // Orijinal logoyu çiz
+            tempCtx.drawImage(logo3Image, 0, 0);
+            
+            // Global composite operation ile renklendirme
+            tempCtx.globalCompositeOperation = 'source-in';
+            tempCtx.fillStyle = params.color;
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            
+            // Ana canvas'a boyalı logoyu çiz
+            ctx.drawImage(tempCanvas, logoX, numberP0.y, logoWidth, logoHeight);
         }
     }
 }
