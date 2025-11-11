@@ -43,6 +43,10 @@ const numberDistanceBiasSlider = document.getElementById('numberDistanceBiasSlid
 const numberDistanceBiasValue = document.getElementById('numberDistanceBiasValue');
 const numberScaleBiasSlider = document.getElementById('numberScaleBiasSlider');
 const numberScaleBiasValue = document.getElementById('numberScaleBiasValue');
+const textDistanceSlider = document.getElementById('textDistanceSlider');
+const textDistanceValue = document.getElementById('textDistanceValue');
+const textScaleBiasSlider = document.getElementById('textScaleBiasSlider');
+const textScaleBiasValue = document.getElementById('textScaleBiasValue');
 const colorPicker = document.getElementById('colorPicker');
 const colorValue = document.getElementById('colorValue');
 
@@ -61,6 +65,8 @@ function getParamsFromURL() {
         spacing: 20,
         numberDistanceBias: 0,
         numberScaleBias: 0,
+        textDistance: 50,
+        textScaleBias: 0,
         color: '#E45545'
     };
     
@@ -72,6 +78,8 @@ function getParamsFromURL() {
         spacing: urlParams.has('spacing') ? parseInt(urlParams.get('spacing')) : defaults.spacing,
         numberDistanceBias: urlParams.has('numberDistanceBias') ? parseInt(urlParams.get('numberDistanceBias')) : defaults.numberDistanceBias,
         numberScaleBias: urlParams.has('numberScaleBias') ? parseInt(urlParams.get('numberScaleBias')) : defaults.numberScaleBias,
+        textDistance: urlParams.has('textDistance') ? parseInt(urlParams.get('textDistance')) : defaults.textDistance,
+        textScaleBias: urlParams.has('textScaleBias') ? parseInt(urlParams.get('textScaleBias')) : defaults.textScaleBias,
         color: urlParams.get('color') || defaults.color
     };
 }
@@ -88,6 +96,8 @@ function updateURL() {
     url.searchParams.set('spacing', params.spacing);
     url.searchParams.set('numberDistanceBias', params.numberDistanceBias);
     url.searchParams.set('numberScaleBias', params.numberScaleBias);
+    url.searchParams.set('textDistance', params.textDistance);
+    url.searchParams.set('textScaleBias', params.textScaleBias);
     url.searchParams.set('color', params.color);
     window.history.replaceState({}, '', url);
 }
@@ -116,6 +126,10 @@ numberDistanceBiasSlider.value = params.numberDistanceBias;
 numberDistanceBiasValue.textContent = params.numberDistanceBias;
 numberScaleBiasSlider.value = params.numberScaleBias;
 numberScaleBiasValue.textContent = params.numberScaleBias;
+textDistanceSlider.value = params.textDistance;
+textDistanceValue.textContent = params.textDistance;
+textScaleBiasSlider.value = params.textScaleBias;
+textScaleBiasValue.textContent = params.textScaleBias;
 
 // Color picker'ı güncelle
 colorValue.textContent = params.color;
@@ -153,6 +167,30 @@ let logo3IsLoading = true;
     } catch (err) {
         console.error('Logo3.svg yüklenemedi:', err);
         logo3IsLoading = false;
+    }
+})();
+
+// CodeCubeText.svg'yi yükle
+const codeCubeTextImage = new Image();
+codeCubeTextImage.onload = () => {
+    drawLogo(); // Resim yüklenince tekrar çiz
+};
+codeCubeTextImage.src = 'CodeCubeText.svg';
+
+// CodeCubeText.svg içeriğini text olarak yükle (SVG export için)
+let codeCubeTextSvgContent = '';
+let codeCubeTextIsLoading = true;
+
+// Async olarak yükle
+(async () => {
+    try {
+        const response = await fetch('CodeCubeText.svg');
+        codeCubeTextSvgContent = await response.text();
+        codeCubeTextIsLoading = false;
+        console.log('CodeCubeText.svg yüklendi');
+    } catch (err) {
+        console.error('CodeCubeText.svg yüklenemedi:', err);
+        codeCubeTextIsLoading = false;
     }
 })();
 
@@ -374,6 +412,54 @@ function drawLogo() {
             ctx.drawImage(tempCanvas, logoX, numberP0.y, logoWidth, logoHeight);
         }
     }
+    
+    // CodeCubeText.svg'yi çiz - logonun altına ortalanmış
+    if (codeCubeTextImage.complete && rightChevrons && codeCubeTextSvgContent) {
+        // Text'in başlangıç Y pozisyonu: sağ chevron'un alt noktası + textDistance
+        const textY = centerY + params.textDistance;
+        
+        // Scale bias uygula
+        const textScaleFactor = 1 + (params.textScaleBias / 100);
+        
+        // Text boyutunu hesapla - logonun genişliğine göre orantılı
+        const baseTextWidth = 400; // Base genişlik
+        const textWidth = baseTextWidth * textScaleFactor;
+        const textHeight = (codeCubeTextImage.height / codeCubeTextImage.width) * textWidth;
+        
+        // X pozisyonunu ortala
+        const textX = centerX - (textWidth / 2);
+        
+        // SVG'yi yüksek çözünürlükte Image'a çevir
+        const parser = new DOMParser();
+        const svgDoc = parser.parseFromString(codeCubeTextSvgContent, 'image/svg+xml');
+        const textSvg = svgDoc.documentElement;
+        
+        // Renkleri değiştir
+        let coloredSvgContent = codeCubeTextSvgContent;
+        coloredSvgContent = coloredSvgContent.replace(/fill="(?!none)[^"]*"/g, `fill="${params.color}"`);
+        coloredSvgContent = coloredSvgContent.replace(/fill='(?!none)[^']*'/g, `fill='${params.color}'`);
+        coloredSvgContent = coloredSvgContent.replace(/stroke="(?!none)[^"]*"/g, `stroke="${params.color}"`);
+        coloredSvgContent = coloredSvgContent.replace(/stroke='(?!none)[^']*'/g, `stroke='${params.color}'`);
+        
+        // Yüksek çözünürlükte temp canvas oluştur
+        const scale = 4; // 4x çözünürlük
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = textWidth * scale * dpr;
+        tempCanvas.height = textHeight * scale * dpr;
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        // SVG'yi blob'a çevir ve yükle
+        const blob = new Blob([coloredSvgContent], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const img = new Image();
+        
+        img.onload = () => {
+            tempCtx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
+            ctx.drawImage(tempCanvas, textX, textY, textWidth, textHeight);
+            URL.revokeObjectURL(url);
+        };
+        img.src = url;
+    }
 }
 
 /**
@@ -428,6 +514,20 @@ numberScaleBiasSlider.addEventListener('input', (e) => {
     drawLogo();
 });
 
+textDistanceSlider.addEventListener('input', (e) => {
+    params.textDistance = parseInt(e.target.value);
+    textDistanceValue.textContent = params.textDistance;
+    updateURL();
+    drawLogo();
+});
+
+textScaleBiasSlider.addEventListener('input', (e) => {
+    params.textScaleBias = parseInt(e.target.value);
+    textScaleBiasValue.textContent = params.textScaleBias;
+    updateURL();
+    drawLogo();
+});
+
 colorPicker.addEventListener('input', (e) => {
     params.color = e.target.value;
     colorValue.textContent = params.color;
@@ -443,19 +543,19 @@ drawLogo();
  */
 document.getElementById('downloadSvg').addEventListener('click', async () => {
     // Logo3.svg yüklenmemişse bekle
-    if (logo3IsLoading) {
-        alert('Logo yükleniyor, lütfen birkaç saniye bekleyin...');
+    if (logo3IsLoading || codeCubeTextIsLoading) {
+        alert('Logolar yükleniyor, lütfen birkaç saniye bekleyin...');
         return;
     }
     
-    if (!logo3SvgContent) {
-        alert('Logo yüklenemedi. Sayfayı yenilemeyi deneyin.');
+    if (!logo3SvgContent || !codeCubeTextSvgContent) {
+        alert('Logolar yüklenemedi. Sayfayı yenilemeyi deneyin.');
         return;
     }
     
-    // SVG string oluştur - canvas boyutundan bağımsız, orijinal boyut
-    const svgWidth = 600;
-    const svgHeight = 600;
+    // SVG string oluştur - canvas boyutlarını kullan ama zoom out'suz
+    const svgWidth = CANVAS_WIDTH;
+    const svgHeight = CANVAS_HEIGHT;
     const svgCenterX = svgWidth / 2;
     const svgCenterY = svgHeight / 2;
     
@@ -570,25 +670,87 @@ document.getElementById('downloadSvg').addEventListener('click', async () => {
             const scaleX = logoWidth / originalWidth;
             const scaleY = logoHeight / originalHeight;
             
-            // Logo3.svg'nin tüm iç içeriğini al (innerHTML)
-            let logo3InnerSvg = logo3Svg.innerHTML;
+            // Logo3.svg'nin tüm iç içeriğini al - XMLSerializer ile düzgün serialize et
+            const serializer = new XMLSerializer();
+            let logo3InnerSvg = '';
             
-            // Renkleri değiştir - regex ile tüm fill ve stroke değerlerini değiştir
-            // fill="..." veya fill='...' pattern'lerini değiştir (none hariç)
-            logo3InnerSvg = logo3InnerSvg.replace(/fill="(?!none)[^"]*"/g, `fill="${params.color}"`);
-            logo3InnerSvg = logo3InnerSvg.replace(/fill='(?!none)[^']*'/g, `fill='${params.color}'`);
-            logo3InnerSvg = logo3InnerSvg.replace(/stroke="(?!none)[^"]*"/g, `stroke="${params.color}"`);
-            logo3InnerSvg = logo3InnerSvg.replace(/stroke='(?!none)[^']*'/g, `stroke='${params.color}'`);
-            
-            // Style içindeki fill ve stroke değerlerini de değiştir
-            logo3InnerSvg = logo3InnerSvg.replace(/fill:\s*(?!none)[^;"]*/g, `fill: ${params.color}`);
-            logo3InnerSvg = logo3InnerSvg.replace(/stroke:\s*(?!none)[^;"]*/g, `stroke: ${params.color}`);
+            // Tüm child elementleri serialize et
+            Array.from(logo3Svg.children).forEach(child => {
+                let childSvg = serializer.serializeToString(child);
+                
+                // Renkleri değiştir
+                childSvg = childSvg.replace(/fill="(?!none)[^"]*"/g, `fill="${params.color}"`);
+                childSvg = childSvg.replace(/fill='(?!none)[^']*'/g, `fill='${params.color}'`);
+                childSvg = childSvg.replace(/stroke="(?!none)[^"]*"/g, `stroke="${params.color}"`);
+                childSvg = childSvg.replace(/stroke='(?!none)[^']*'/g, `stroke='${params.color}'`);
+                childSvg = childSvg.replace(/fill:\s*(?!none)[^;"]*/g, `fill: ${params.color}`);
+                childSvg = childSvg.replace(/stroke:\s*(?!none)[^;"]*/g, `stroke: ${params.color}`);
+                
+                logo3InnerSvg += childSvg + '\n';
+            });
             
             // Logo3'ü transform ile ekle
             svgContent += `  <g transform="translate(${logoX}, ${numberP0.y}) scale(${scaleX}, ${scaleY})">\n`;
             svgContent += logo3InnerSvg + '\n';
             svgContent += `  </g>\n`;
         }
+    }
+    
+    // CodeCubeText.svg'yi ekle - logonun altına ortalanmış
+    if (codeCubeTextSvgContent) {
+        // Text'in pozisyonunu hesapla
+        const textY = svgCenterY + params.textDistance;
+        const textScaleFactor = 1 + (params.textScaleBias / 100);
+        const baseTextWidth = 400;
+        const textWidth = baseTextWidth * textScaleFactor;
+        const textX = svgCenterX - (textWidth / 2);
+        
+        // CodeCubeText.svg içeriğini parse et ve embed et
+        const parser = new DOMParser();
+        const svgDoc = parser.parseFromString(codeCubeTextSvgContent, 'image/svg+xml');
+        const textSvg = svgDoc.documentElement;
+        
+        // Orijinal viewBox veya width/height al
+        const viewBox = textSvg.getAttribute('viewBox');
+        let originalWidth, originalHeight;
+        
+        if (viewBox) {
+            const [, , vbWidth, vbHeight] = viewBox.split(' ').map(Number);
+            originalWidth = vbWidth;
+            originalHeight = vbHeight;
+        } else {
+            originalWidth = parseFloat(textSvg.getAttribute('width')) || 100;
+            originalHeight = parseFloat(textSvg.getAttribute('height')) || 100;
+        }
+        
+        // Scale faktörünü hesapla
+        const textHeight = (originalHeight / originalWidth) * textWidth;
+        const scaleX = textWidth / originalWidth;
+        const scaleY = textHeight / originalHeight;
+        
+        // CodeCubeText.svg'nin tüm iç içeriğini al - XMLSerializer ile düzgün serialize et
+        const textSerializer = new XMLSerializer();
+        let textInnerSvg = '';
+        
+        // Tüm child elementleri serialize et
+        Array.from(textSvg.children).forEach(child => {
+            let childSvg = textSerializer.serializeToString(child);
+            
+            // Renkleri değiştir
+            childSvg = childSvg.replace(/fill="(?!none)[^"]*"/g, `fill="${params.color}"`);
+            childSvg = childSvg.replace(/fill='(?!none)[^']*'/g, `fill='${params.color}'`);
+            childSvg = childSvg.replace(/stroke="(?!none)[^"]*"/g, `stroke="${params.color}"`);
+            childSvg = childSvg.replace(/stroke='(?!none)[^']*'/g, `stroke='${params.color}'`);
+            childSvg = childSvg.replace(/fill:\s*(?!none)[^;"]*/g, `fill: ${params.color}`);
+            childSvg = childSvg.replace(/stroke:\s*(?!none)[^;"]*/g, `stroke: ${params.color}`);
+            
+            textInnerSvg += childSvg + '\n';
+        });
+        
+        // Text'i transform ile ekle
+        svgContent += `  <g transform="translate(${textX}, ${textY}) scale(${scaleX}, ${scaleY})">\n`;
+        svgContent += textInnerSvg + '\n';
+        svgContent += `  </g>\n`;
     }
     
     svgContent += `</svg>`;
