@@ -13,6 +13,10 @@ const slashDiffSlider = document.getElementById('slashDiffSlider');
 const slashDiffValue = document.getElementById('slashDiffValue');
 const spacingSlider = document.getElementById('spacingSlider');
 const spacingValue = document.getElementById('spacingValue');
+const numberDistanceBiasSlider = document.getElementById('numberDistanceBiasSlider');
+const numberDistanceBiasValue = document.getElementById('numberDistanceBiasValue');
+const numberScaleBiasSlider = document.getElementById('numberScaleBiasSlider');
+const numberScaleBiasValue = document.getElementById('numberScaleBiasValue');
 const colorPicker = document.getElementById('colorPicker');
 const colorValue = document.getElementById('colorValue');
 
@@ -27,6 +31,8 @@ function getParamsFromURL() {
         chevronLength: parseInt(urlParams.get('chevronLength')) || parseInt(chevronLengthSlider.value),
         slashDiff: parseInt(urlParams.get('slashDiff')) || parseInt(slashDiffSlider.value),
         spacing: parseInt(urlParams.get('spacing')) || parseInt(spacingSlider.value),
+        numberDistanceBias: parseInt(urlParams.get('numberDistanceBias')) || parseInt(numberDistanceBiasSlider.value),
+        numberScaleBias: parseInt(urlParams.get('numberScaleBias')) || parseInt(numberScaleBiasSlider.value),
         color: urlParams.get('color') || colorPicker.value
     };
 }
@@ -41,6 +47,8 @@ function updateURL() {
     url.searchParams.set('chevronLength', params.chevronLength);
     url.searchParams.set('slashDiff', params.slashDiff);
     url.searchParams.set('spacing', params.spacing);
+    url.searchParams.set('numberDistanceBias', params.numberDistanceBias);
+    url.searchParams.set('numberScaleBias', params.numberScaleBias);
     url.searchParams.set('color', params.color);
     window.history.replaceState({}, '', url);
 }
@@ -59,12 +67,23 @@ slashDiffSlider.value = params.slashDiff;
 slashDiffValue.textContent = params.slashDiff;
 spacingSlider.value = params.spacing;
 spacingValue.textContent = params.spacing;
+numberDistanceBiasSlider.value = params.numberDistanceBias;
+numberDistanceBiasValue.textContent = params.numberDistanceBias;
+numberScaleBiasSlider.value = params.numberScaleBias;
+numberScaleBiasValue.textContent = params.numberScaleBias;
 colorPicker.value = params.color;
 colorValue.textContent = params.color;
 
 // Canvas'ın merkezini hesapla
 const centerX = canvas.width / 2;
 const centerY = canvas.height / 2;
+
+// Logo3.svg'yi yükle
+const logo3Image = new Image();
+logo3Image.onload = () => {
+    drawLogo(); // Resim yüklenince tekrar çiz
+};
+logo3Image.src = 'Logo3.svg';
 
 /**
  * Yarım chevron noktalarını hesapla
@@ -253,17 +272,21 @@ function drawLogo() {
         rightChevrons.rightChevron1.p2
     );
     
-    // Noktayı çiz
+    // Logo3.svg'yi çiz
     if (numberP0) {
-        ctx.beginPath();
-        ctx.arc(numberP0.x, numberP0.y, 5, 0, 2 * Math.PI);
-        ctx.fillStyle = '#00ff00';
-        ctx.fill();
-        
-        // numberP0'dan rightChevron1.p1.y'ye kadar mavi kare
         const squareHeight = rightChevrons.rightChevron1.p1.y - numberP0.y;
-        ctx.fillStyle = 'rgba(0, 0, 255, 0.5)'; // Yarı saydam mavi
-        ctx.fillRect(numberP0.x, numberP0.y, squareHeight, squareHeight);
+        
+        if (logo3Image.complete) {
+            // Scale bias uygula (yüzde olarak)
+            const scaleFactor = 1 + (params.numberScaleBias / 100);
+            const logoHeight = squareHeight * scaleFactor;
+            const logoWidth = (logo3Image.width / logo3Image.height) * logoHeight;
+            
+            // Distance bias uygula (x pozisyonuna)
+            const logoX = numberP0.x + params.numberDistanceBias;
+            
+            ctx.drawImage(logo3Image, logoX, numberP0.y, logoWidth, logoHeight);
+        }
     }
 }
 
@@ -301,6 +324,20 @@ slashDiffSlider.addEventListener('input', (e) => {
 spacingSlider.addEventListener('input', (e) => {
     params.spacing = parseInt(e.target.value);
     spacingValue.textContent = params.spacing;
+    updateURL();
+    drawLogo();
+});
+
+numberDistanceBiasSlider.addEventListener('input', (e) => {
+    params.numberDistanceBias = parseInt(e.target.value);
+    numberDistanceBiasValue.textContent = params.numberDistanceBias;
+    updateURL();
+    drawLogo();
+});
+
+numberScaleBiasSlider.addEventListener('input', (e) => {
+    params.numberScaleBias = parseInt(e.target.value);
+    numberScaleBiasValue.textContent = params.numberScaleBias;
     updateURL();
     drawLogo();
 });
