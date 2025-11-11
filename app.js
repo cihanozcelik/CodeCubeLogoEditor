@@ -762,27 +762,68 @@ document.getElementById('downloadSvg').addEventListener('click', async () => {
         return `  <polygon points="${p0.x},${p0.y} ${p1.x},${p1.y} ${p2.x},${p2.y} ${p3.x},${p3.y}" fill="${color}" />\n`;
     }
     
-    // Minimum chevron distance hesapla
-    const { p0: tempP0, p1: tempP1, p2: tempP2, p3: tempP3 } = calculateHalfChevron(centerX, params.width, params.chevronLength, 90 - params.angle, 90);
+    // SVG için calculateHalfChevron benzeri fonksiyon tanımla (svgCenter kullanarak)
+    function calculateSVGHalfChevron(xStartPosition, width, length, angle, upperLineAngle) {
+        const angleRad = (angle * Math.PI) / 180;
+        const upperLineAngleRad = (upperLineAngle * Math.PI) / 180;
+        
+        const p0 = {
+            x: xStartPosition - (width / 2),
+            y: svgCenterY
+        };
+        
+        const p1 = {
+            x: p0.x + length * Math.sin(angleRad),
+            y: p0.y - length * Math.cos(angleRad)
+        };
+        
+        const p3 = {
+            x: xStartPosition + (width / 2),
+            y: svgCenterY
+        };
+        
+        const pTemp = {
+            x: p3.x + length * Math.sin(angleRad),
+            y: p3.y - length * Math.cos(angleRad)
+        };
+        
+        const dirP1x = Math.sin(upperLineAngleRad);
+        const dirP1y = Math.cos(upperLineAngleRad);
+        const dirP3x = pTemp.x - p3.x;
+        const dirP3y = pTemp.y - p3.y;
+        
+        const det = dirP1x * dirP3y - dirP1y * dirP3x;
+        const t = ((p3.x - p1.x) * dirP3y - (p3.y - p1.y) * dirP3x) / det;
+        
+        const p2 = {
+            x: p1.x + t * dirP1x,
+            y: p1.y + t * dirP1y
+        };
+        
+        return { p0, p1, p2, p3 };
+    }
+    
+    // Minimum chevron distance hesapla - SVG koordinatları ile
+    const { p0: tempP0, p1: tempP1, p2: tempP2, p3: tempP3 } = calculateSVGHalfChevron(svgCenterX, params.width, params.chevronLength, 90 - params.angle, 90);
     const angleRad = ((90 - params.angle) * Math.PI) / 180;
     const dirX = Math.sin(angleRad);
     const dirY = Math.cos(angleRad);
-    const t = (centerY - tempP2.y) / dirY;
+    const t = (svgCenterY - tempP2.y) / dirY;
     const intersectionX = tempP2.x + t * dirX;
     
     // Sol chevron
-    const minChevronDistance = (intersectionX - params.width/2) - centerX;
-    const xStartLeft = centerX - minChevronDistance - params.spacing;
+    const minChevronDistance = (intersectionX - params.width/2) - svgCenterX;
+    const xStartLeft = svgCenterX - minChevronDistance - params.spacing;
     svgContent += generateSVGPolygon(xStartLeft, params.width, params.chevronLength, 90 - params.angle, 90 - params.angle, params.color);
     svgContent += generateSVGPolygon(xStartLeft, params.width, params.chevronLength, 90 + params.angle, -(90 - params.angle), params.color);
     
     // Sağ chevron
-    const xStartRight = centerX + minChevronDistance + params.spacing;
+    const xStartRight = svgCenterX + minChevronDistance + params.spacing;
     svgContent += generateSVGPolygon(xStartRight, -params.width, params.chevronLength, -(90 - params.angle), -(90 - params.angle), params.color);
     svgContent += generateSVGPolygon(xStartRight, -params.width, params.chevronLength, -(90 + params.angle), (90 - params.angle), params.color);
     
     // Slash
-    const xStartCenter = centerX;
+    const xStartCenter = svgCenterX;
     svgContent += generateSVGPolygon(xStartCenter, params.width, params.chevronLength + params.slashDiff, 90 - params.angle, 90, params.color);
     svgContent += generateSVGPolygon(xStartCenter, params.width, params.chevronLength + params.slashDiff, 180 + (90 - params.angle), 90, params.color);
     
@@ -792,9 +833,9 @@ document.getElementById('downloadSvg').addEventListener('click', async () => {
     
     // numberP0 ve logo pozisyonunu hesapla (basitleştirilmiş)
     if (logo3SvgContent) {
-        // Kesişim noktasını yaklaşık hesapla
-        const { p0, p1, p2, p3 } = calculateHalfChevron(xStartCenter, params.width, params.chevronLength + params.slashDiff, 90 - params.angle, 90);
-        const { p0: rp0, p1: rp1, p2: rp2 } = calculateHalfChevron(xStartRight, -params.width, params.chevronLength, -(90 - params.angle), -(90 - params.angle));
+        // Kesişim noktasını yaklaşık hesapla - SVG koordinatları ile
+        const { p0, p1, p2, p3 } = calculateSVGHalfChevron(xStartCenter, params.width, params.chevronLength + params.slashDiff, 90 - params.angle, 90);
+        const { p0: rp0, p1: rp1, p2: rp2 } = calculateSVGHalfChevron(xStartRight, -params.width, params.chevronLength, -(90 - params.angle), -(90 - params.angle));
         
         const numberP0 = findLineIntersection(p1, p2, rp1, rp2);
         
@@ -858,8 +899,8 @@ document.getElementById('downloadSvg').addEventListener('click', async () => {
     
     // CodeCubeText.svg'yi ekle - logonun altına ortalanmış
     if (codeCubeTextSvgContent) {
-        // Slash'in alt noktasını hesapla (icon scale ile)
-        const { p0, p1, p2, p3 } = calculateHalfChevron(xStartCenter, params.width, params.chevronLength + params.slashDiff, 180 + (90 - params.angle), 90);
+        // Slash'in alt noktasını hesapla (icon scale ile) - SVG koordinatları ile
+        const { p0, p1, p2, p3 } = calculateSVGHalfChevron(xStartCenter, params.width, params.chevronLength + params.slashDiff, 180 + (90 - params.angle), 90);
         const slashBottomY = Math.max(p0.y, p1.y, p2.y, p3.y);
         
         // Icon scale bias uygula
