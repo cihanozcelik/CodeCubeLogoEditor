@@ -69,14 +69,11 @@ function updateURL() {
 // Parametreler - URL'den yükle veya default değerler
 let params = getParamsFromURL();
 
-// Rengin # ile başladığından emin ol
+// Rengin # ile başladığından emin ol ve lowercase yap
 if (params.color && !params.color.startsWith('#')) {
     params.color = '#' + params.color;
 }
-
-console.log('Loaded params:', params);
-console.log('Color from URL:', params.color);
-console.log('Setting colorPicker.value to:', params.color);
+params.color = params.color.toLowerCase();
 
 // Slider'ları URL'deki değerlere göre ayarla
 angleSlider.value = params.angle;
@@ -93,10 +90,19 @@ numberDistanceBiasSlider.value = params.numberDistanceBias;
 numberDistanceBiasValue.textContent = params.numberDistanceBias;
 numberScaleBiasSlider.value = params.numberScaleBias;
 numberScaleBiasValue.textContent = params.numberScaleBias;
-colorPicker.value = params.color;
+
+// Color picker'ı güncelle
 colorValue.textContent = params.color;
 
-console.log('After setting - colorPicker.value:', colorPicker.value);
+// Tarayıcı render'ını bekle, sonra değeri set et
+requestAnimationFrame(() => {
+    colorPicker.value = params.color;
+    colorPicker.setAttribute('value', params.color);
+    
+    // Input event'ini de tetikle
+    colorPicker.dispatchEvent(new Event('input', { bubbles: true }));
+    colorPicker.dispatchEvent(new Event('change', { bubbles: true }));
+});
 
 // Canvas'ın merkezini hesapla
 const centerX = canvas.width / 2;
