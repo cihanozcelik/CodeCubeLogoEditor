@@ -3,9 +3,9 @@ const canvas = document.getElementById('myCanvas');
 const ctx = canvas.getContext('2d');
 
 // Canvas boyutları
-const CANVAS_WIDTH = 1200;
-const CANVAS_HEIGHT = 800;
-const ZOOM_FACTOR = 0.7;
+const CANVAS_WIDTH = 700;
+const CANVAS_HEIGHT = 500;
+const ZOOM_FACTOR = 0.5;
 
 // HiDPI/Retina desteği için canvas'ı yüksek çözünürlükte render et
 const dpr = window.devicePixelRatio || 1;
@@ -379,13 +379,87 @@ function findLineIntersection(p1, p2, p3, p4) {
  * Logoyu çiz
  */
 function drawLogo() {
-    // Canvas'ı temizle
+    // Canvas'ı tamamen temizle
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset all transforms
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+    
+    // Önce noktaları hesapla - geçici çizim yap
+    const tempLeftChevrons = drawLeftChevron();
+    const tempRightChevrons = drawRightChevron();
+    const tempSlashes = drawSlash();
+    
+    // Logo'nun en üst ve en alt noktalarını bul
+    let logoTopY = centerY;
+    let logoBottomY = centerY;
+    
+    if (tempSlashes) {
+        const allYPoints = [
+            tempSlashes.slash1.p0.y,
+            tempSlashes.slash1.p1.y,
+            tempSlashes.slash1.p2.y,
+            tempSlashes.slash1.p3.y,
+            tempSlashes.slash2.p0.y,
+            tempSlashes.slash2.p1.y,
+            tempSlashes.slash2.p2.y,
+            tempSlashes.slash2.p3.y
+        ];
+        logoTopY = Math.min(...allYPoints);
+        logoBottomY = Math.max(...allYPoints);
+    }
+    
+    // Text yüksekliğini hesapla
+    let textBottomY = logoBottomY;
+    if (codeCubeTextImage.complete) {
+        const textScaleFactor = 1 + (params.textScaleBias / 100);
+        const baseTextWidth = 400;
+        const textWidth = baseTextWidth * textScaleFactor;
+        const textHeight = (codeCubeTextImage.height / codeCubeTextImage.width) * textWidth;
+        const textY = centerY + params.textDistance;
+        textBottomY = textY + textHeight;
+    }
+    
+    // Toplam yükseklik ve ortalama offset
+    const totalHeight = textBottomY - logoTopY;
+    const currentMidpoint = (logoTopY + textBottomY) / 2;
+    const desiredMidpoint = centerY;
+    const verticalOffset = desiredMidpoint - currentMidpoint;
+    
+    // Geçici çizimi temizle
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+    
+    // Offset ile tekrar çiz
+    ctx.save();
+    ctx.translate(0, verticalOffset);
     
     // Sol chevron ve slash'i çiz
     const leftChevrons = drawLeftChevron();
     const rightChevrons = drawRightChevron();
     const slashes = drawSlash();
+    
+    // Logo yüksekliğini hesapla (text hariç) - slash'in en üst ve en alt noktaları
+    let logoHeightWithoutText = 0;
+    if (slashes) {
+        const allYPoints = [
+            slashes.slash1.p0.y,
+            slashes.slash1.p1.y,
+            slashes.slash1.p2.y,
+            slashes.slash1.p3.y,
+            slashes.slash2.p0.y,
+            slashes.slash2.p1.y,
+            slashes.slash2.p2.y,
+            slashes.slash2.p3.y
+        ];
+        const minY = Math.min(...allYPoints);
+        const maxY = Math.max(...allYPoints);
+        logoHeightWithoutText = maxY - minY;
+        
+        console.log('Logo height (without text):', logoHeightWithoutText, 'px');
+    }
     
     // numberP0: slash'in ilk yarısının p1-p2 ile sağ chevron'un ilk yarısının p1-p2 kesişimi
     const numberP0 = findLineIntersection(
@@ -460,7 +534,31 @@ function drawLogo() {
         
         // Ana canvas'a boyalı text'i çiz (scale down edilecek)
         ctx.drawImage(tempCanvas, textX, textY, textWidth, textHeight);
+        
+        // Text'in en alt noktasını hesapla
+        const textBottomY = textY + textHeight;
+        console.log('CodeCubeText bottom Y:', textBottomY, 'px');
+        
+        // Toplam logo yüksekliği (text dahil)
+        if (logoHeightWithoutText > 0) {
+            const allYPoints = [
+                slashes.slash1.p0.y,
+                slashes.slash1.p1.y,
+                slashes.slash1.p2.y,
+                slashes.slash1.p3.y,
+                slashes.slash2.p0.y,
+                slashes.slash2.p1.y,
+                slashes.slash2.p2.y,
+                slashes.slash2.p3.y
+            ];
+            const logoTopY = Math.min(...allYPoints);
+            const totalLogoHeight = textBottomY - logoTopY;
+            console.log('Total logo height (with text):', totalLogoHeight, 'px');
+        }
     }
+    
+    // Canvas state'ini geri yükle
+    ctx.restore();
 }
 
 /**
