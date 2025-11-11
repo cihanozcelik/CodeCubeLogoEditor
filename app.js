@@ -69,6 +69,11 @@ function updateURL() {
 // Parametreler - URL'den yükle veya default değerler
 let params = getParamsFromURL();
 
+// Rengin # ile başladığından emin ol
+if (params.color && !params.color.startsWith('#')) {
+    params.color = '#' + params.color;
+}
+
 // Slider'ları URL'deki değerlere göre ayarla
 angleSlider.value = params.angle;
 angleValue.textContent = params.angle;
