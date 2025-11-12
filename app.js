@@ -167,6 +167,11 @@ requestAnimationFrame(() => {
 
 // centerX ve centerY yukarıda tanımlandı (CANVAS_WIDTH/2, CANVAS_HEIGHT/2)
 
+// Hugging Face API configuration
+const HF_API_KEY = 'hf_XHHKVRNQKwYmVDZYkvUlLm11AtexmAilXs';
+// Daha küçük model dene - CORS friendly olabilir
+const HF_MODEL = 'microsoft/DialoGPT-medium';
+
 // Logo3.svg'yi yükle
 const logo3Image = new Image();
 logo3Image.onload = () => {
@@ -997,4 +1002,198 @@ document.getElementById('copyUrl').addEventListener('click', async () => {
         alert('URL kopyalanamadı: ' + err);
     }
 });
+
+// ============================================
+// AI CHAT FUNCTIONALITY
+// ============================================
+
+/**
+ * Cloudflare Worker üzerinden AI API'ye istek gönder
+ */
+async function callAIAPI(prompt) {
+    const WORKER_URL = 'https://gentle-rain-f393.cihanozcelik.workers.dev';
+    
+    try {
+        // Mevcut parametreleri topla
+        const currentParams = {
+            angle: params.angle,
+            width: params.width,
+            chevronLength: params.chevronLength,
+            slashDiff: params.slashDiff,
+            spacing: params.spacing,
+            numberDistanceBias: params.numberDistanceBias,
+            numberScaleBias: params.numberScaleBias,
+            iconScaleBias: params.iconScaleBias,
+            textDistance: params.textDistance,
+            textScaleBias: params.textScaleBias,
+            color: params.color,
+            textColor: params.textColor
+        };
+        
+        const response = await fetch(WORKER_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                message: prompt,
+                currentParams: currentParams
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Worker Error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Response formatını kontrol et
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        // Groq response'u parse et (OpenAI format)
+        if (data.choices && data.choices[0]?.message?.content) {
+            const content = data.choices[0].message.content;
+            
+            // JSON parse et
+            try {
+                const aiResponse = JSON.parse(content);
+                return aiResponse;
+            } catch (e) {
+                // JSON parse edilemezse düz metin olarak döndür
+                return { message: content, changes: {} };
+            }
+        }
+        
+        return { message: 'Cevap alınamadı.', changes: {} };
+    } catch (error) {
+        console.error('AI API Error:', error);
+        throw new Error(`AI hatası: ${error.message}`);
+    }
+}
+
+/**
+ * AI'dan gelen değişiklikleri uygula
+ */
+function applyAIChanges(changes) {
+    let changed = false;
+    
+    for (const [key, value] of Object.entries(changes)) {
+        if (params.hasOwnProperty(key) && params[key] !== value) {
+            params[key] = value;
+            changed = true;
+            
+            // İlgili slider'ı ve değer göstergesini güncelle
+            const slider = document.getElementById(`${key}Slider`);
+            const valueSpan = document.getElementById(`${key}Value`);
+            
+            if (slider) {
+                slider.value = value;
+            }
+            
+            if (valueSpan) {
+                // Color için hex değer, diğerleri için sayı
+                if (key === 'color' || key === 'textColor') {
+                    valueSpan.textContent = value;
+                    // Color picker'ı güncelle
+                    const picker = document.getElementById(`${key}Picker`);
+                    if (picker) {
+                        picker.value = value;
+                    }
+                } else {
+                    valueSpan.textContent = value;
+                }
+            }
+        }
+    }
+    
+    if (changed) {
+        updateURL();
+        drawLogo();
+    }
+    
+    return changed;
+}
+
+/**
+ * Chat mesajı ekle
+ */
+function addChatMessage(message, isUser = false) {
+    const messagesDiv = document.getElementById('chatMessages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chat-message ${isUser ? 'user' : 'ai'}`;
+    messageDiv.textContent = message;
+    messagesDiv.appendChild(messageDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+/**
+ * Loading mesajı göster
+ */
+function showLoadingMessage() {
+    const messagesDiv = document.getElementById('chatMessages');
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'chat-message loading';
+    loadingDiv.id = 'loadingMessage';
+    loadingDiv.textContent = '🤔 Düşünüyorum...';
+    messagesDiv.appendChild(loadingDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+/**
+ * Loading mesajını kaldır
+ */
+function removeLoadingMessage() {
+    const loadingDiv = document.getElementById('loadingMessage');
+    if (loadingDiv) {
+        loadingDiv.remove();
+    }
+}
+
+/**
+ * Mesaj gönder
+ */
+async function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    // Kullanıcı mesajını ekle
+    addChatMessage(message, true);
+    input.value = '';
+    
+    // Butonu disable et
+    sendBtn.disabled = true;
+    showLoadingMessage();
+    
+    try {
+        // AI'ye sor (mevcut parametrelerle birlikte)
+        const aiResponse = await callAIAPI(message);
+        removeLoadingMessage();
+        
+        // AI'ın mesajını göster
+        addChatMessage(aiResponse.message, false);
+        
+        // Değişiklikler varsa uygula
+        if (aiResponse.changes && Object.keys(aiResponse.changes).length > 0) {
+            console.log('AI değişiklikleri uygulanıyor:', aiResponse.changes);
+            const applied = applyAIChanges(aiResponse.changes);
+            if (applied) {
+                console.log('✅ Değişiklikler uygulandı!');
+            }
+        }
+    } catch (error) {
+        removeLoadingMessage();
+        addChatMessage('❌ Hata: ' + error.message, false);
+        console.error('AI Error:', error);
+    } finally {
+        sendBtn.disabled = false;
+    }
+}
+
+// Global scope'a ekle (HTML'den çağrılabilsin)
+window.sendMessage = sendMessage;
 

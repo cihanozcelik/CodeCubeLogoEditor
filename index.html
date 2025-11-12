@@ -19,6 +19,21 @@
             <button id="copyUrl" class="download-btn share-btn">URL'i Kopyala</button>
         </div>
 
+        <!-- AI Chat Section -->
+        <div class="ai-chat-section">
+            <h3>🤖 AI Asistan</h3>
+            <div id="chatMessages" class="chat-messages"></div>
+            <div class="chat-input-container">
+                <input 
+                    type="text" 
+                    id="chatInput" 
+                    placeholder="Logoya ne yapmamı istersin? (örn: 'logoyu daha geniş yap')"
+                    onkeypress="if(event.key==='Enter') sendMessage()"
+                >
+                <button id="sendBtn" onclick="sendMessage()">Gönder</button>
+            </div>
+        </div>
+
         <div class="controls">
             <div class="control-group">
                 <label for="angleSlider">
@@ -186,7 +201,12 @@
         </div>
     </div>
 
-    <script src="app.js?v=44"></script>
+    <!-- Hugging Face Inference SDK -->
+    <script type="module">
+        import { HfInference } from 'https://cdn.jsdelivr.net/npm/@huggingface/inference@2.6.4/+esm';
+        window.HfInference = HfInference;
+    </script>
+    <script src="app.js?v=52"></script>
 </body>
 </html>
 
