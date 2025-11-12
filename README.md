@@ -278,7 +278,7 @@ DOĞRU ÖRNEKLER:
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
+            model: 'llama-3.1-8b-instant',  // En yüksek rate limit
             response_format: { type: 'json_object' },
             messages: [
               {
