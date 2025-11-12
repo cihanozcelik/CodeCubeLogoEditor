@@ -72,7 +72,7 @@ function getParamsFromURL() {
         iconScaleBias: 4,
         textDistance: 28,
         textScaleBias: -48,
-        color: '#e45545',
+        color: '#d63c34',
         textColor: '#000000'
     };
     
