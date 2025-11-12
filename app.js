@@ -1008,10 +1008,12 @@ document.getElementById('copyUrl').addEventListener('click', async () => {
 // ============================================
 
 /**
- * Cloudflare Worker üzerinden AI API'ye istek gönder
+ * Cloudflare Worker üzerinden AI API'ye istek gönder (retry ile)
  */
-async function callAIAPI(prompt) {
+async function callAIAPI(prompt, retryCount = 0) {
     const WORKER_URL = 'https://gentle-rain-f393.cihanozcelik.workers.dev';
+    const MAX_RETRIES = 2;
+    const RETRY_DELAY = 3000; // 3 saniye
     
     try {
         // Mevcut parametreleri topla
@@ -1049,27 +1051,84 @@ async function callAIAPI(prompt) {
         
         // Response formatını kontrol et
         if (data.error) {
-            throw new Error(data.error);
+            const errorMsg = typeof data.error === 'string' ? data.error : JSON.stringify(data.error);
+            
+            // Rate limit hatası mı kontrol et
+            const isRateLimit = errorMsg.includes('rate_limit') || errorMsg.includes('Rate limit');
+            
+            if (isRateLimit && retryCount < MAX_RETRIES) {
+                console.log(`Rate limit hatası, ${RETRY_DELAY/1000} saniye sonra tekrar denenecek... (Deneme ${retryCount + 1}/${MAX_RETRIES})`);
+                
+                // Kullanıcıya bilgi ver
+                const loadingMsg = document.querySelector('.chat-message.loading');
+                if (loadingMsg) {
+                    loadingMsg.textContent = `⏳ Yapay zeka yoğun, ${RETRY_DELAY/1000} saniye sonra tekrar deneniyor...`;
+                }
+                
+                // Bekle ve tekrar dene
+                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+                return callAIAPI(prompt, retryCount + 1);
+            }
+            
+            throw new Error(errorMsg);
         }
         
         // Groq response'u parse et (OpenAI format)
         if (data.choices && data.choices[0]?.message?.content) {
             const content = data.choices[0].message.content;
             
+            console.log('AI Response Content:', content); // Debug için
+            
             // JSON parse et
             try {
                 const aiResponse = JSON.parse(content);
+                
+                // Geçerli response formatını kontrol et
+                if (!aiResponse.message) {
+                    console.warn('AI response message eksik:', aiResponse);
+                    aiResponse.message = 'İşlem tamamlandı.';
+                }
+                if (!aiResponse.changes) {
+                    console.warn('AI response changes eksik:', aiResponse);
+                    aiResponse.changes = {};
+                }
+                
                 return aiResponse;
             } catch (e) {
+                console.error('JSON parse hatası:', e, 'Content:', content);
                 // JSON parse edilemezse düz metin olarak döndür
                 return { message: content, changes: {} };
             }
         }
         
-        return { message: 'Cevap alınamadı.', changes: {} };
+        console.error('Beklenmeyen response formatı:', data);
+        return { message: 'Cevap alınamadı. Lütfen tekrar deneyin.', changes: {} };
     } catch (error) {
         console.error('AI API Error:', error);
-        throw new Error(`AI hatası: ${error.message}`);
+        
+        // Retry edilebilir bir hata mı kontrol et
+        const isRetryable = error.message.includes('rate_limit') || 
+                           error.message.includes('Rate limit') ||
+                           error.message.includes('Worker Error: 429') ||
+                           error.message.includes('Worker Error: 503');
+        
+        if (isRetryable && retryCount < MAX_RETRIES) {
+            console.log(`Retry edilebilir hata, ${RETRY_DELAY/1000} saniye sonra tekrar denenecek... (Deneme ${retryCount + 1}/${MAX_RETRIES})`);
+            
+            // Kullanıcıya bilgi ver
+            const loadingMsg = document.querySelector('.chat-message.loading');
+            if (loadingMsg) {
+                loadingMsg.textContent = `⏳ Bağlantı sorunu, ${RETRY_DELAY/1000} saniye sonra tekrar deneniyor...`;
+            }
+            
+            // Bekle ve tekrar dene
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+            return callAIAPI(prompt, retryCount + 1);
+        }
+        
+        // Error objesini düzgün string'e çevir
+        const errorMsg = error.message || JSON.stringify(error) || 'Bilinmeyen hata';
+        throw new Error(`AI hatası: ${errorMsg}`);
     }
 }
 
