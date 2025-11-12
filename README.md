@@ -27,6 +27,8 @@ CodeCube Software için interaktif logo düzenleyici. Tarayıcınızdan logonuzu
 
 ### Lokal Geliştirme
 
+⚠️ **Önemli**: AI özelliğini localhost'ta test edecekseniz, önce aşağıdaki "AI Asistan Kurulumu" bölümünü tamamlayın ve Cloudflare Worker'daki `allowedOrigins` listesine `http://localhost:8000` ekleyin. Test tamamlandıktan sonra güvenlik için localhost'u listeden kaldırın!
+
 ```bash
 # Projeyi klonlayın
 git clone https://github.com/cihanozcelik/CodeCubeLogoEditor.git
@@ -74,7 +76,8 @@ export default {
   async fetch(request, env, ctx) {
     // İzin verilen origin'ler
     const allowedOrigins = [
-      'https://GITHUB_KULLANICI_ADINIZ.github.io'  // Kendi GitHub Pages URL'inizi yazın
+      'https://GITHUB_KULLANICI_ADINIZ.github.io',  // Kendi GitHub Pages URL'inizi yazın
+      // 'http://localhost:8000'  // Lokal test için açın, test sonrası MUTLAKA kaldırın!
     ];
     
     const origin = request.headers.get('Origin');
@@ -183,12 +186,40 @@ git commit -m "Update AI worker URL"
 git push origin main
 ```
 
-### 5. Test Etme
+### 5. Localhost'ta Test (İsteğe Bağlı)
 
-1. Birkaç dakika bekleyin (GitHub Pages güncellenmesi için)
-2. Sayfanızı açın
-3. "AI Asistan" bölümüne bir mesaj yazın: "logoyu daha geniş yap"
-4. AI otomatik olarak parametreleri değiştirmeli!
+**Lokal test yapmak istiyorsanız:**
+
+1. Cloudflare Worker kodunda `allowedOrigins` satırını bulun
+2. `// 'http://localhost:8000'` satırının başındaki `//` işaretlerini kaldırın:
+
+```javascript
+const allowedOrigins = [
+  'https://GITHUB_KULLANICI_ADINIZ.github.io',
+  'http://localhost:8000'  // Aktif hale geldi
+];
+```
+
+3. **"Deploy"** butonuna basın
+4. Localhost'ta test edin
+5. ⚠️ **Test bittikten sonra MUTLAKA localhost satırını tekrar yorum satırı yapın veya silin!**
+
+```javascript
+const allowedOrigins = [
+  'https://GITHUB_KULLANICI_ADINIZ.github.io',
+  // 'http://localhost:8000'  // Güvenlik için kapatıldı
+];
+```
+
+6. Tekrar **"Deploy"** butonuna basın
+
+### 6. GitHub Pages'te Test
+
+1. Değişiklikleri GitHub'a pushlayın (adım 4'teki gibi)
+2. Birkaç dakika bekleyin (GitHub Pages güncellenmesi için)
+3. Sayfanızı açın: `https://KULLANICI_ADI.github.io/CodeCubeLogoEditor/`
+4. "AI Asistan" bölümüne bir mesaj yazın: "logoyu daha geniş yap"
+5. AI otomatik olarak parametreleri değiştirmeli!
 
 ## 📁 Proje Yapısı
 
