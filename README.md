@@ -76,8 +76,8 @@ export default {
   async fetch(request, env, ctx) {
     // İzin verilen origin'ler
     const allowedOrigins = [
-      'https://GITHUB_KULLANICI_ADINIZ.github.io',  // Kendi GitHub Pages URL'inizi yazın
-      // 'http://localhost:8000'  // Lokal test için açın, test sonrası MUTLAKA kaldırın!
+      'https://GITHUB_KULLANICI_ADINIZ.github.io'  // Kendi GitHub Pages URL'inizi yazın
+      // Lokal test için ekleyin: 'http://localhost:8000'
     ];
     
     const origin = request.headers.get('Origin');
@@ -351,7 +351,7 @@ git push origin main
 ```javascript
 const allowedOrigins = [
   'https://GITHUB_KULLANICI_ADINIZ.github.io',
-  'http://localhost:8000'  // Aktif hale geldi
+  'http://localhost:8000'
 ];
 ```
 
@@ -361,8 +361,8 @@ const allowedOrigins = [
 
 ```javascript
 const allowedOrigins = [
-  'https://GITHUB_KULLANICI_ADINIZ.github.io',
-  // 'http://localhost:8000'  // Güvenlik için kapatıldı
+  'https://GITHUB_KULLANICI_ADINIZ.github.io'
+  // Test bittiyse localhost satırını tamamen silin veya yorum satırı yapın
 ];
 ```
 
